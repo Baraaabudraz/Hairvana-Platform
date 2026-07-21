@@ -1,0 +1,181 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { User, SalonOwner, Customer } = require('../models');
+const authService = require('../services/authService');
+const PermissionService = require("../services/permissionService");
+const passwordResetService = require('../services/passwordResetService');
+// Remove destructuring for validateLogin, validateRegister, validateChangePassword
+// const { validateLogin, validateRegister, validateChangePassword } = require('../validation/authValidation');
+// Placeholder for future Supabase client usage
+// const supabase = require('../lib/supabaseClient');
+
+// Login
+exports.login = async (req, res, next) => {
+  try {
+    // Validation handled by middleware
+    const { user, token } = await authService.login(req.body);
+    res.json({ user, token });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Register
+exports.register = async (req, res, next) => {
+  try {
+    // Validation handled by middleware
+    const { user, token } = await authService.register(req.body);
+    res.status(201).json({ message: 'User registered successfully', user, token });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Logout
+exports.logout = async (req, res, next) => {
+  try {
+    await authService.logout(req.user);
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get current user
+exports.getCurrentUser = async (req, res, next) => {
+  try {
+    const userId = req.user.id || req.user.userId; // Handle both id and userId for compatibility
+    const user = await authService.getCurrentUser(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Change password
+exports.changePassword = async (req, res, next) => {
+  try {
+    // Validation handled by middleware
+    const userId = req.user.id || req.user.userId; // Handle both id and userId for compatibility
+    await authService.changePassword(userId, req.body);
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get user permissions
+exports.getUserPermissions = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user.userId; // Handle both id and userId for compatibility
+    
+    const permissions = await PermissionService.getUserPermissions(userId);
+    const accessibleResources = await PermissionService.getAccessibleResources(userId);
+    const userRole = await PermissionService.getUserRole(userId);
+
+    res.json({
+      success: true,
+      data: {
+        permissions,
+        accessibleResources,
+        role: userRole
+      }
+    });
+  } catch (error) {
+    console.error('Error getting user permissions:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get user permissions' 
+    });
+  }
+};
+
+// Forget password for customer
+exports.forgetPasswordCustomer = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email is required' 
+      });
+    }
+
+    const result = await passwordResetService.requestCustomerPasswordReset(email);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Forget password for salon owner
+exports.forgetPasswordSalon = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email is required' 
+      });
+    }
+
+    const result = await passwordResetService.requestSalonPasswordReset(email);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Reset password
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { token, password, confirmPassword } = req.body;
+    
+    if (!token || !password || !confirmPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Token, password, and confirm password are required' 
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Passwords do not match' 
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = passwordResetService.validatePasswordStrength(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Password does not meet requirements',
+        errors: passwordValidation.errors
+      });
+    }
+
+    const result = await passwordResetService.resetPassword(token, password);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,0 +1,833 @@
+const { body, query, param } = require('express-validator');
+const { commonRules } = require('./index');
+const { Salon } = require('../models');
+
+/**
+ * Validation schema for creating a new salon
+ */
+const createSalonValidation = [
+  body('name')
+    .notEmpty()
+    .withMessage('Salon name is required')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Salon name must be between 2 and 100 characters')
+    .custom(async (value) => {
+      const existingSalon = await Salon.findOne({ where: { name: value } });
+      if (existingSalon) {
+        throw new Error('Salon name already exists. Please choose a different name.');
+      }
+      return true;
+    }),
+  
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Description must not exceed 500 characters'),
+  
+  body('street_address')
+    .notEmpty()
+    .withMessage('Street address is required')
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Street address must be between 5 and 200 characters'),
+  
+  body('city')
+    .notEmpty()
+    .withMessage('City is required')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('City must be between 2 and 100 characters'),
+  
+  body('state')
+    .notEmpty()
+    .withMessage('State is required')
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('State must be between 2 and 50 characters'),
+  
+  body('zip_code')
+    .notEmpty()
+    .withMessage('ZIP code is required')
+    .trim()
+    .matches(/^\d{5}(-\d{4})?$/)
+    .withMessage('ZIP code must be in format 12345 or 12345-6789'),
+  
+  body('country')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Country must be between 2 and 50 characters'),
+  
+  body('phone')
+    .notEmpty()
+    .withMessage('Phone number is required')
+    .trim()
+    .matches(/^\+?[\d\s\-\(\)]+$/)
+    .withMessage('Invalid phone number format'),
+  
+  body('email')
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Invalid email format')
+    .normalizeEmail()
+    .custom(async (value) => {
+      const existingSalon = await Salon.findOne({ where: { email: value } });
+      if (existingSalon) {
+        throw new Error('Email address already exists. Please use a different email.');
+      }
+      return true;
+    }),
+  
+  body('website')
+    .optional()
+    .trim()
+    .isURL()
+    .withMessage('Invalid website URL'),
+  
+  body('latitude')
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('Latitude must be between -90 and 90'),
+  
+  body('longitude')
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('Longitude must be between -180 and 180'),
+  
+  body('hours')
+    .optional()
+    .custom((value) => {
+      if (value === undefined || value === null) {
+        return true; // Optional field
+      }
+      
+      // If it's a string, try to parse as JSON
+      if (typeof value === 'string') {
+        if (value.startsWith('{') && value.endsWith('}')) {
+          try {
+            value = JSON.parse(value);
+          } catch (e) {
+            throw new Error('Hours must be valid JSON if provided as string');
+          }
+        } else {
+          throw new Error('Hours must be a valid JSON object');
+        }
+      }
+      
+      // Handle array format (e.g., ["friday: 9:00 AM - 9:00 PM"])
+      if (Array.isArray(value)) {
+        const validTimeFormats = [
+          /^Closed$/i,
+          /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i,
+          /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/,
+          /^24\/7$/i
+        ];
+        
+        for (const hour of value) {
+          if (typeof hour === 'string') {
+            // Try to parse "day: time" format (e.g., "friday: 9:00 AM - 9:00 PM")
+            const colonIndex = hour.indexOf(':');
+            if (colonIndex !== -1) {
+              const day = hour.substring(0, colonIndex).trim().toLowerCase();
+              const time = hour.substring(colonIndex + 1).trim();
+              
+              // Validate day
+              const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+              if (!validDays.includes(day)) {
+                throw new Error(`Invalid day: ${day}. Must be one of: ${validDays.join(', ')}`);
+              }
+              
+              // Check for incomplete time formats
+              if (time.trim() === ' - ' || time.trim() === '-' || time.trim() === '') {
+                throw new Error(`Hours for ${day} cannot be empty or incomplete. Use "Closed" or a valid time range like "9:00 AM - 5:00 PM"`);
+              }
+              
+              // Validate time format
+              const isValidFormat = validTimeFormats.some(format => format.test(time.trim()));
+              if (!isValidFormat) {
+                throw new Error(`Invalid time format for ${day}: "${time}". Use "Closed", "9:00 AM - 5:00 PM", "9:00-17:00", or "24/7"`);
+              }
+            } else {
+              throw new Error(`Invalid hours format: "${hour}". Expected format: "day: time" (e.g., "friday: 9:00 AM - 9:00 PM")`);
+            }
+          } else {
+            throw new Error('Each hours entry must be a string');
+          }
+        }
+        return true;
+      }
+      
+      // Now validate the object structure
+      if (typeof value === 'object' && value !== null) {
+        const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const validTimeFormats = [
+          /^Closed$/i,
+          /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i,
+          /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/,
+          /^24\/7$/i
+        ];
+        
+        for (const [day, time] of Object.entries(value)) {
+          if (!validDays.includes(day.toLowerCase())) {
+            throw new Error(`Invalid day: ${day}. Must be one of: ${validDays.join(', ')}`);
+          }
+          
+          if (typeof time !== 'string') {
+            throw new Error(`Hours for ${day} must be a string`);
+          }
+          
+          // Check for incomplete time formats
+          if (time.trim() === ' - ' || time.trim() === '-' || time.trim() === '') {
+            throw new Error(`Hours for ${day} cannot be empty or incomplete. Use "Closed" or a valid time range like "9:00 AM - 5:00 PM"`);
+          }
+          
+          // Validate time format
+          const isValidFormat = validTimeFormats.some(format => format.test(time.trim()));
+          if (!isValidFormat) {
+            throw new Error(`Invalid time format for ${day}: "${time}". Use "Closed", "9:00 AM - 5:00 PM", "9:00-17:00", or "24/7"`);
+          }
+        }
+        
+        return true;
+      }
+      
+      throw new Error('Hours must be an object or array with valid day-time pairs');
+    })
+    .withMessage('Hours must be a valid object or array with proper time formats'),
+  
+  body('services')
+    .optional()
+    .custom((value) => {
+      if (value === undefined || value === null) {
+        return true; // Optional field
+      }
+      
+      // If it's a string, try to parse as JSON
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (!Array.isArray(parsed)) {
+            throw new Error('Services must be an array');
+          }
+          return true;
+        } catch (e) {
+          throw new Error('Services must be a valid JSON array if provided as string');
+        }
+      }
+      
+      // If it's already an array, validate it
+      if (Array.isArray(value)) {
+        return true;
+      }
+      
+      throw new Error('Services must be an array');
+    })
+    .withMessage('Services must be an array'),
+  
+  body('amenities')
+    .optional()
+    .isArray()
+    .withMessage('Amenities must be an array'),
+  
+  body('images')
+    .optional()
+    .isArray()
+    .withMessage('Images must be an array'),
+  
+  body('gallery')
+    .optional()
+    .isArray()
+    .withMessage('Gallery must be an array'),
+  
+  body('rating')
+    .optional()
+    .isFloat({ min: 0, max: 5 })
+    .withMessage('Rating must be between 0 and 5'),
+  
+  body('status')
+    .optional()
+    .isIn(['active', 'inactive', 'pending'])
+    .withMessage('Invalid salon status'),
+  
+  body('owner_id')
+    .optional()
+    .isUUID()
+    .withMessage('Owner ID must be a valid UUID'),
+];
+
+/**
+ * Validation schema for updating a salon
+ */
+const updateSalonValidation = [
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Salon name must be between 2 and 100 characters')
+    .custom(async (value, { req }) => {
+      if (value) {
+        const existingSalon = await Salon.findOne({ 
+          where: { 
+            name: value,
+            id: { [require('sequelize').Op.ne]: req.params.id || req.body.id }
+          } 
+        });
+        if (existingSalon) {
+          throw new Error('Salon name already exists. Please choose a different name.');
+        }
+      }
+      return true;
+    }),
+  
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Description must not exceed 500 characters'),
+  
+  body('street_address')
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Street address must be between 5 and 200 characters'),
+  
+  body('city')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('City must be between 2 and 100 characters'),
+  
+  body('state')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('State must be between 2 and 50 characters'),
+  
+  body('zip_code')
+    .optional()
+    .trim()
+    .matches(/^\d{5}(-\d{4})?$/)
+    .withMessage('ZIP code must be in format 12345 or 12345-6789'),
+  
+  body('country')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Country must be between 2 and 50 characters'),
+  
+  body('phone')
+    .optional()
+    .trim()
+    .matches(/^\+?[\d\s\-\(\)]+$/)
+    .withMessage('Invalid phone number format'),
+  
+  body('email')
+    .optional()
+    .isEmail()
+    .withMessage('Invalid email format')
+    .normalizeEmail()
+    .custom(async (value, { req }) => {
+      if (value) {
+        const existingSalon = await Salon.findOne({ 
+          where: { 
+            email: value,
+            id: { [require('sequelize').Op.ne]: req.params.id || req.body.id }
+          } 
+        });
+        if (existingSalon) {
+          throw new Error('Email address already exists. Please use a different email.');
+        }
+      }
+      return true;
+    }),
+  
+  body('website')
+    .optional()
+    .trim()
+    .isURL()
+    .withMessage('Invalid website URL'),
+  
+  body('latitude')
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('Latitude must be between -90 and 90'),
+  
+  body('longitude')
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('Longitude must be between -180 and 180'),
+  
+  body('working_hours')
+    .optional()
+    .isObject()
+    .withMessage('Working hours must be an object'),
+  
+  body('services')
+    .optional()
+    .custom((value) => {
+      if (value === undefined || value === null) {
+        return true; // Optional field
+      }
+      
+      // If it's a string, try to parse as JSON
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (!Array.isArray(parsed)) {
+            throw new Error('Services must be an array');
+          }
+          return true;
+        } catch (e) {
+          throw new Error('Services must be a valid JSON array if provided as string');
+        }
+      }
+      
+      // If it's already an array, validate it
+      if (Array.isArray(value)) {
+        return true;
+      }
+      
+      throw new Error('Services must be an array');
+    })
+    .withMessage('Services must be an array'),
+  
+  body('amenities')
+    .optional()
+    .isArray()
+    .withMessage('Amenities must be an array'),
+  
+  body('images')
+    .optional()
+    .isArray()
+    .withMessage('Images must be an array'),
+  
+  body('rating')
+    .optional()
+    .isFloat({ min: 0, max: 5 })
+    .withMessage('Rating must be between 0 and 5'),
+  
+  body('status')
+    .optional()
+    .isIn(['active', 'inactive', 'pending'])
+    .withMessage('Invalid salon status'),
+];
+
+/**
+ * Validation schema for updating salon profile (owner-specific)
+ */
+const updateSalonProfileValidation = [
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Salon name must be between 2 and 100 characters')
+    .custom(async (value, { req }) => {
+      if (value && req.user && req.user.id) {
+        // Find the current user's salon to exclude it from uniqueness check
+        const currentUserSalon = await Salon.findOne({ where: { owner_id: req.user.id } });
+        const whereClause = { name: value };
+        
+        if (currentUserSalon) {
+          whereClause.id = { [require('sequelize').Op.ne]: currentUserSalon.id };
+        }
+        
+        const existingSalon = await Salon.findOne({ where: whereClause });
+        if (existingSalon) {
+          throw new Error('Salon name already exists. Please choose a different name.');
+        }
+      }
+      return true;
+    }),
+  
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Description must not exceed 500 characters'),
+  
+  body('street_address')
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Street address must be between 5 and 200 characters'),
+  
+  body('city')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('City must be between 2 and 100 characters'),
+  
+  body('state')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('State must be between 2 and 50 characters'),
+  
+  body('zip_code')
+    .optional()
+    .trim()
+    .matches(/^\d{5}(-\d{4})?$/)
+    .withMessage('ZIP code must be in format 12345 or 12345-6789'),
+  
+  body('country')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Country must be between 2 and 50 characters'),
+  
+  body('phone')
+    .optional()
+    .trim()
+    .matches(/^\+?[\d\s\-\(\)]+$/)
+    .withMessage('Invalid phone number format'),
+  
+  body('email')
+    .optional()
+    .isEmail()
+    .withMessage('Invalid email format')
+    .normalizeEmail()
+    .custom(async (value, { req }) => {
+      if (value && req.user && req.user.id) {
+        // Find the current user's salon to exclude it from uniqueness check
+        const currentUserSalon = await Salon.findOne({ where: { owner_id: req.user.id } });
+        const whereClause = { email: value };
+        
+        if (currentUserSalon) {
+          whereClause.id = { [require('sequelize').Op.ne]: currentUserSalon.id };
+        }
+        
+        const existingSalon = await Salon.findOne({ where: whereClause });
+        if (existingSalon) {
+          throw new Error('Email address already exists. Please use a different email.');
+        }
+      }
+      return true;
+    }),
+  
+  body('website')
+    .optional()
+    .trim()
+    .isURL()
+    .withMessage('Invalid website URL'),
+  
+  body('business_license')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Business license must be between 1 and 100 characters'),
+  
+  body('tax_id')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Tax ID must be between 1 and 50 characters'),
+  
+  body('hours')
+    .optional()
+    .custom((value) => {
+      if (value === undefined || value === null) {
+        return true; // Optional field
+      }
+      
+      // If it's a string, try to parse as JSON
+      if (typeof value === 'string') {
+        if (value.startsWith('{') && value.endsWith('}')) {
+          try {
+            value = JSON.parse(value);
+          } catch (e) {
+            throw new Error('Hours must be valid JSON if provided as string');
+          }
+        } else {
+          throw new Error('Hours must be a valid JSON object');
+        }
+      }
+      
+      // Handle array format (e.g., ["friday: 9:00 AM - 9:00 PM"])
+      if (Array.isArray(value)) {
+        const validTimeFormats = [
+          /^Closed$/i,
+          /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i,
+          /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/,
+          /^24\/7$/i
+        ];
+        
+        for (const hour of value) {
+          if (typeof hour === 'string') {
+            // Try to parse "day: time" format (e.g., "friday: 9:00 AM - 9:00 PM")
+            const colonIndex = hour.indexOf(':');
+            if (colonIndex !== -1) {
+              const day = hour.substring(0, colonIndex).trim().toLowerCase();
+              const time = hour.substring(colonIndex + 1).trim();
+              
+              // Validate day
+              const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+              if (!validDays.includes(day)) {
+                throw new Error(`Invalid day: ${day}. Must be one of: ${validDays.join(', ')}`);
+              }
+              
+              // Check for incomplete time formats
+              if (time.trim() === ' - ' || time.trim() === '-' || time.trim() === '') {
+                throw new Error(`Hours for ${day} cannot be empty or incomplete. Use "Closed" or a valid time range like "9:00 AM - 5:00 PM"`);
+              }
+              
+              // Validate time format
+              const isValidFormat = validTimeFormats.some(format => format.test(time.trim()));
+              if (!isValidFormat) {
+                throw new Error(`Invalid time format for ${day}: "${time}". Use "Closed", "9:00 AM - 5:00 PM", "9:00-17:00", or "24/7"`);
+              }
+            } else {
+              throw new Error(`Invalid hours format: "${hour}". Expected format: "day: time" (e.g., "friday: 9:00 AM - 9:00 PM")`);
+            }
+          } else {
+            throw new Error('Each hours entry must be a string');
+          }
+        }
+        return true;
+      }
+      
+      // Now validate the object structure
+      if (typeof value === 'object' && value !== null) {
+        const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const validTimeFormats = [
+          /^Closed$/i,
+          /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i,
+          /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/,
+          /^24\/7$/i
+        ];
+        
+        for (const [day, time] of Object.entries(value)) {
+          if (!validDays.includes(day.toLowerCase())) {
+            throw new Error(`Invalid day: ${day}. Must be one of: ${validDays.join(', ')}`);
+          }
+          
+          if (typeof time !== 'string') {
+            throw new Error(`Hours for ${day} must be a string`);
+          }
+          
+          // Check for incomplete time formats
+          if (time.trim() === ' - ' || time.trim() === '-' || time.trim() === '') {
+            throw new Error(`Hours for ${day} cannot be empty or incomplete. Use "Closed" or a valid time range like "9:00 AM - 5:00 PM"`);
+          }
+          
+          // Validate time format
+          const isValidFormat = validTimeFormats.some(format => format.test(time.trim()));
+          if (!isValidFormat) {
+            throw new Error(`Invalid time format for ${day}: "${time}". Use "Closed", "9:00 AM - 5:00 PM", "9:00-17:00", or "24/7"`);
+          }
+        }
+        
+        return true;
+      }
+      
+      throw new Error('Hours must be an object or array with valid day-time pairs');
+    })
+    .withMessage('Hours must be a valid object or array with proper time formats'),
+  
+  body('avatar')
+    .optional()
+    .isString()
+    .withMessage('Avatar must be a string'),
+  
+  body('gallery')
+    .optional()
+    .isArray()
+    .withMessage('Gallery must be an array'),
+];
+
+/**
+ * Validation schema for getting salons with filters
+ */
+const getSalonsValidation = [
+  query('location')
+    .optional()
+    .isString()
+    .withMessage('Location must be a string'),
+  
+  query('name')
+    .optional()
+    .isString()
+    .withMessage('Name must be a string')
+    .isLength({ min: 2 })
+    .withMessage('Name must be at least 2 characters'),
+  
+  query('rating')
+    .optional()
+    .isFloat({ min: 0, max: 5 })
+    .withMessage('Rating must be between 0 and 5'),
+  
+  query('city')
+    .optional()
+    .isString()
+    .withMessage('City must be a string'),
+  
+  query('state')
+    .optional()
+    .isString()
+    .withMessage('State must be a string'),
+  
+  query('service')
+    .optional()
+    .isString()
+    .withMessage('Service must be a string'),
+  
+  query('latitude')
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('Latitude must be between -90 and 90'),
+  
+  query('longitude')
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('Longitude must be between -180 and 180'),
+  
+  query('radius')
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('Radius must be between 0 and 100 km'),
+  
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Limit must be between 1 and 100'),
+  
+  query('offset')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Offset must be a non-negative integer'),
+];
+
+/**
+ * Validation schema for getting salon by ID
+ */
+const getSalonByIdValidation = [
+  param('id')
+    .notEmpty()
+    .withMessage('Salon ID is required')
+    .isUUID()
+    .withMessage('Salon ID must be a valid UUID'),
+];
+
+/**
+ * Validation schema for searching salons
+ */
+const searchSalonsValidation = [
+  query('q')
+    .notEmpty()
+    .withMessage('Search query is required')
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage('Search query must be at least 2 characters'),
+  
+  query('city')
+    .optional()
+    .isString()
+    .withMessage('City must be a string'),
+  
+  query('state')
+    .optional()
+    .isString()
+    .withMessage('State must be a string'),
+  
+  query('service')
+    .optional()
+    .isString()
+    .withMessage('Service must be a string'),
+  
+  query('rating')
+    .optional()
+    .isFloat({ min: 0, max: 5 })
+    .withMessage('Rating must be between 0 and 5'),
+  
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Limit must be between 1 and 100'),
+  
+  query('offset')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Offset must be a non-negative integer'),
+];
+
+/**
+ * Validation schema for getting monthly revenue
+ */
+const getMonthlyRevenueValidation = [
+  param('salonId')
+    .notEmpty()
+    .withMessage('Salon ID is required')
+    .isUUID()
+    .withMessage('Salon ID must be a valid UUID'),
+  
+  query('year')
+    .optional()
+    .isInt({ min: 2020, max: 2030 })
+    .withMessage('Year must be between 2020 and 2030'),
+  
+  query('month')
+    .optional()
+    .isInt({ min: 1, max: 12 })
+    .withMessage('Month must be between 1 and 12'),
+];
+
+/**
+ * Validation schema for salon ID parameter
+ */
+const salonIdValidation = [
+  param('salonId')
+    .notEmpty()
+    .withMessage('Salon ID is required')
+    .isUUID()
+    .withMessage('Salon ID must be a valid UUID'),
+];
+
+/**
+ * Validation schema for getting transaction history
+ */
+const getTransactionHistoryValidation = [
+  param('salonId')
+    .notEmpty()
+    .withMessage('Salon ID is required')
+    .isUUID()
+    .withMessage('Salon ID must be a valid UUID'),
+  
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Page must be a positive integer'),
+  
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Limit must be between 1 and 100'),
+  
+  query('status')
+    .optional()
+    .isIn(['pending', 'paid', 'failed', 'cancelled', 'all'])
+    .withMessage('Status must be one of: pending, paid, failed, cancelled, all'),
+  
+  query('from')
+    .optional()
+    .isISO8601()
+    .withMessage('From date must be a valid ISO 8601 date'),
+  
+  query('to')
+    .optional()
+    .isISO8601()
+    .withMessage('To date must be a valid ISO 8601 date'),
+];
+
+module.exports = {
+  createSalonValidation,
+  updateSalonValidation,
+  updateSalonProfileValidation,
+  getSalonsValidation,
+  getSalonByIdValidation,
+  searchSalonsValidation,
+  getMonthlyRevenueValidation,
+  getTransactionHistoryValidation,
+  salonIdValidation,
+};

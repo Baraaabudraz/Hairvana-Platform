@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# .env files (can opt-in for committing if needed)
 .env*
 
 # vercel
@@ -40,3 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env
+
+
+# public
+/public
+/dist
+backend/config/up-lancer-ac146cc55400.json
+

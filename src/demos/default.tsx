@@ -59,9 +59,9 @@ function cnUtil(...classes: (string | undefined | null | false)[]): string {
 // Use the utility if cn is not available
 const cnFallback = typeof cn !== 'undefined' ? cn : cnUtil;
 
-// Hook for click outside
+// Hook for click outside - Fixed type definition
 function useClickOutside<T extends HTMLElement = HTMLElement>(
-  ref: React.RefObject<T>,
+  ref: React.RefObject<T | null>,
   handler: (event: MouseEvent | TouchEvent) => void,
   mouseEvent: 'mousedown' | 'mouseup' = 'mousedown'
 ): void {
@@ -97,10 +97,10 @@ interface AnimatedTextCycleProps {
 function AnimatedTextCycle({
   words,
   interval = 3000,
-  className = "",
+  className = '',
 }: AnimatedTextCycleProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [width, setWidth] = useState("auto");
+  const [width, setWidth] = useState('auto');
   const measureRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -125,24 +125,21 @@ function AnimatedTextCycle({
     hidden: {
       y: -20,
       opacity: 0,
-      filter: "blur(8px)"
     },
     visible: {
       y: 0,
       opacity: 1,
-      filter: "blur(0px)",
       transition: {
         duration: 0.4,
-        ease: "easeOut"
+        ease: 'easeOut'
       }
     },
     exit: {
       y: 20,
       opacity: 0,
-      filter: "blur(8px)",
       transition: {
         duration: 0.3,
-        ease: "easeIn"
+        ease: 'easeIn'
       }
     },
   };
@@ -153,7 +150,7 @@ function AnimatedTextCycle({
         ref={measureRef}
         aria-hidden="true"
         className="absolute opacity-0 pointer-events-none"
-        style={{ visibility: "hidden" }}
+        style={{ visibility: 'hidden' }}
       >
         {words.map((word, i) => (
           <span key={i} className={`font-bold ${className}`}>
@@ -167,7 +164,7 @@ function AnimatedTextCycle({
         animate={{
           width,
           transition: {
-            type: "spring",
+            type: 'spring',
             stiffness: 150,
             damping: 15,
             mass: 1.2,
@@ -182,7 +179,7 @@ function AnimatedTextCycle({
             initial="hidden"
             animate="visible"
             exit="exit"
-            style={{ whiteSpace: "nowrap" }}
+            style={{ whiteSpace: 'nowrap' }}
           >
             {words[currentIndex]}
           </motion.span>
@@ -403,14 +400,14 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const [isFocused, setIsFocused] = React.useState(false);
 
     return (
-      <div className={cnFallback("relative", containerClassName)}>
+      <div className={cnFallback('relative', containerClassName)}>
         <textarea
           className={cnFallback(
-            "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-            "transition-all duration-200 ease-in-out",
-            "placeholder:text-muted-foreground",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            showRing ? "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0" : "",
+            'flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm',
+            'transition-all duration-200 ease-in-out',
+            'placeholder:text-muted-foreground',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            showRing ? 'focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0' : '',
             className
           )}
           ref={ref}
@@ -429,10 +426,10 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           />
         )}
       </div>
-    )
+    );
   }
-)
-Textarea.displayName = "Textarea"
+);
+Textarea.displayName = 'Textarea';
 
 interface HairstyleCard {
   id: string;
@@ -495,9 +492,9 @@ export function HairvanaInterface() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-      const [activeView, setActiveView] = useState<'home' | 'ar' | 'gallery' | 'booking' | 'profile' | 'chat' | 'evaluation' | 'bookAppointment' | 'payment' | 'favorites' | 'salons' | 'paymentDetails' | 'history' | 'salonDetails' | 'styleDetails' | 'settings' | 'bookingHistory'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'gallery' | 'booking' | 'profile' | 'chat' | 'evaluation' | 'bookAppointment' | 'payment' | 'favorites' | 'salons' | 'paymentDetails' | 'history' | 'salonDetails' | 'styleDetails' | 'settings' | 'bookingHistory' | 'ar'>('home');
   const [selectedStyle, setSelectedStyle] = useState<HairstyleCard | null>(null);
-  const [isARActive, setIsARActive] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -508,29 +505,29 @@ export function HairvanaInterface() {
   ]);
   const [stylist, setStylist] = useState<StylistProfile | null>(null);
   const [selectedAppointmentStylist, setSelectedAppointmentStylist] = useState<StylistProfile | null>(null);
-    const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
-    const [selectedSalonForDetails, setSelectedSalonForDetails] = useState<Salon | null>(null);
+  const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
+  const [selectedSalonForDetails, setSelectedSalonForDetails] = useState<Salon | null>(null);
   const [selectedStyleForDetails, setSelectedStyleForDetails] = useState<HairstyleCard | null>(null);
   const [bookingHistory, setBookingHistory] = useState([
     {
-      id: "booking1",
-      salon: "The Hair Lab",
-      stylist: "Sarah Chen",
-      style: "Curtain Bangs",
-      date: "Dec 15, 2024",
-      time: "2:00 PM",
-      status: "upcoming",
-      price: "$135.00"
+      id: 'booking1',
+      salon: 'The Hair Lab',
+      stylist: 'Sarah Chen',
+      style: 'Curtain Bangs',
+      date: 'Dec 15, 2024',
+      time: '2:00 PM',
+      status: 'upcoming',
+      price: '$135.00'
     },
     {
-      id: "booking2", 
-      salon: "Luxe Beauty Studio",
-      stylist: "Marcus Rodriguez",
-      style: "Beach Waves",
-      date: "Nov 28, 2024",
-      time: "10:00 AM", 
-      status: "completed",
-      price: "$120.00"
+      id: 'booking2',
+      salon: 'Luxe Beauty Studio',
+      stylist: 'Marcus Rodriguez',
+      style: 'Beach Waves',
+      date: 'Nov 28, 2024',
+      time: '10:00 AM',
+      status: 'completed',
+      price: '$120.00'
     }
   ]);
   const [settings, setSettings] = useState({
@@ -553,28 +550,28 @@ export function HairvanaInterface() {
   const [salonViewMode, setSalonViewMode] = useState<'list' | 'map'>('list');
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([
     {
-      id: "hist1",
-      name: "Medium Wavy Bob",
+      id: 'hist1',
+      name: 'Medium Wavy Bob',
       aiMatch: 91,
-      date: "June 16, 2025",
-      status: "booked",
-      image: "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=400&h=600&fit=crop"
+      date: 'June 16, 2025',
+      status: 'booked',
+      image: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=400&h=600&fit=crop'
     },
     {
-      id: "hist2",
-      name: "Classic Pixie Cut",
+      id: 'hist2',
+      name: 'Classic Pixie Cut',
       aiMatch: 76,
-      date: "May 30, 2025",
-      status: "saved",
-      image: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6f6c?w=400&h=600&fit=crop"
+      date: 'May 30, 2025',
+      status: 'saved',
+      image: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6f6c?w=400&h=600&fit=crop'
     },
     {
-      id: "hist3",
-      name: "Curtain Bangs",
+      id: 'hist3',
+      name: 'Curtain Bangs',
       aiMatch: 88,
-      date: "May 20, 2025",
-      status: "tried",
-      image: "https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?w=400&h=600&fit=crop"
+      date: 'May 20, 2025',
+      status: 'tried',
+      image: 'https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?w=400&h=600&fit=crop'
     },
   ]);
 
@@ -593,33 +590,33 @@ export function HairvanaInterface() {
   const onboardingStepsData = [
     {
       icon: <Sparkles className="w-16 h-16 text-purple-500" />,
-      title: "Welcome to Hairvana!",
-      description: "See how new hairstyles look on you, instantly and confidently — with AR and AI magic.",
+      title: 'Welcome to Hairvana!',
+      description: 'See how new hairstyles look on you, instantly and confidently — with AR and AI magic.',
     },
     {
       icon: <Camera className="w-16 h-16 text-pink-500" />,
-      title: "Try Before You Cut",
-      description: "Use your camera to preview hundreds of hairstyles in real-time AR.",
+      title: 'Try Before You Cut',
+      description: 'Use your camera to preview hundreds of hairstyles in real-time AR.',
     },
     {
       icon: <Zap className="w-16 h-16 text-blue-500" />,
-      title: "AI-Powered Suggestions",
-      description: "Our AI evaluates your chosen style, face shape, and tone to guide you to your best look.",
+      title: 'AI-Powered Suggestions',
+      description: 'Our AI evaluates your chosen style, face shape, and tone to guide you to your best look.',
     },
     {
       icon: <Vote className="w-16 h-16 text-green-500" />,
-      title: "Save & Share Styles",
-      description: "Save your looks, rate them, and ask friends to vote on what suits you best — all in one tap!",
+      title: 'Save & Share Styles',
+      description: 'Save your looks, rate them, and ask friends to vote on what suits you best — all in one tap!',
     },
     {
       icon: <Calendar className="w-16 h-16 text-orange-500" />,
-      title: "Book Instantly",
-      description: "Like what you see? Book a matching salon nearby with available slots. Smooth and fast.",
+      title: 'Book Instantly',
+      description: 'Like what you see? Book a matching salon nearby with available slots. Smooth and fast.',
     },
     {
       icon: <MessageCircle className="w-16 h-16 text-purple-500" />,
-      title: "Style Coach AI",
-      description: "Unsure what fits your face? Ask our chatbot for suggestions, trends, and expert advice.",
+      title: 'Style Coach AI',
+      description: 'Unsure what fits your face? Ask our chatbot for suggestions, trends, and expert advice.',
     },
   ];
 
@@ -747,7 +744,7 @@ export function HairvanaInterface() {
     {
       id: '2',
       name: 'Marcus Rodriguez',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit:crop',
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
       rating: 4.8,
       reviewCount: 89,
       specialties: ['Cuts', 'Beard', 'Styling'],
@@ -760,27 +757,27 @@ export function HairvanaInterface() {
   const styleSuggestions: StyleSuggestion[] = [
     {
       icon: <Scissors className="w-5 h-5" />,
-      label: "Try a shorter cut",
-      description: "Based on your face shape, a bob would be perfect",
-      category: "cut"
+      label: 'Try a shorter cut',
+      description: 'Based on your face shape, a bob would be perfect',
+      category: 'cut'
     },
     {
       icon: <Palette className="w-5 h-5" />,
-      label: "Add some highlights",
-      description: "Caramel highlights would complement your skin tone",
-      category: "color"
+      label: 'Add some highlights',
+      description: 'Caramel highlights would complement your skin tone',
+      category: 'color'
     },
     {
       icon: <Wand2 className="w-5 h-5" />,
-      label: "Curtain bangs",
-      description: "Trending style that would frame your face beautifully",
-      category: "style"
+      label: 'Curtain bangs',
+      description: 'Trending style that would frame your face beautifully',
+      category: 'style'
     },
     {
       icon: <TrendingUp className="w-5 h-5" />,
-      label: "Beach waves",
+      label: 'Beach waves',
       description: "Effortless texture that's perfect for your hair type",
-      category: "texture"
+      category: 'texture'
     }
   ];
 
@@ -811,10 +808,9 @@ export function HairvanaInterface() {
     return favoriteStyles.some(style => style.id === styleId);
   };
 
-  const handleARTryOn = (style: HairstyleCard) => {
+  const handleStyleView = (style: HairstyleCard) => {
     setSelectedStyle(style);
-    setActiveView('ar');
-    setIsARActive(true);
+    setActiveView('styleDetails');
   };
 
   const filteredStyles = defaultHairstyles.filter(style =>
@@ -822,7 +818,7 @@ export function HairvanaInterface() {
     (selectedFilters.length === 0 || selectedFilters.includes(style.category))
   );
 
-    const handleAiCoachSend = () => {
+  const handleAiCoachSend = () => {
     if (aiCoachInput.trim() === '') return;
     const newUserMessage = { type: 'user' as const, text: aiCoachInput };
     setAiCoachMessages(prev => [...prev, newUserMessage]);
@@ -850,10 +846,10 @@ export function HairvanaInterface() {
             whileTap={{ scale: 0.98 }}
             onClick={() => setSalonViewMode('list')}
             className={cnFallback(
-              "px-3 py-1 rounded-md text-sm font-medium transition-colors",
-              salonViewMode === 'list' 
-                ? "bg-white text-purple-600 shadow-sm" 
-                : "text-gray-600"
+              'px-3 py-1 rounded-md text-sm font-medium transition-colors',
+              salonViewMode === 'list'
+                ? 'bg-white text-purple-600 shadow-sm'
+                : 'text-gray-600'
             )}
           >
             List View
@@ -863,10 +859,10 @@ export function HairvanaInterface() {
             whileTap={{ scale: 0.98 }}
             onClick={() => setSalonViewMode('map')}
             className={cnFallback(
-              "px-3 py-1 rounded-md text-sm font-medium transition-colors",
-              salonViewMode === 'map' 
-                ? "bg-white text-purple-600 shadow-sm" 
-                : "text-gray-600"
+              'px-3 py-1 rounded-md text-sm font-medium transition-colors',
+              salonViewMode === 'map'
+                ? 'bg-white text-purple-600 shadow-sm'
+                : 'text-gray-600'
             )}
           >
             Map View
@@ -888,7 +884,7 @@ export function HairvanaInterface() {
             <p className="text-gray-600 font-medium">Interactive Map View</p>
             <p className="text-sm text-gray-500">Showing {defaultSalons.length} salons nearby</p>
           </div>
-          
+
           {/* Simulated Map Pins */}
           <div className="absolute top-16 left-12 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-bounce">
             1
@@ -964,7 +960,7 @@ export function HairvanaInterface() {
                     {salon.openHours}
                   </div>
                   <div className="flex gap-2">
-                                        <motion.button
+                    <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-lg font-medium"
@@ -1010,7 +1006,7 @@ export function HairvanaInterface() {
             >
               {filter}
             </motion.button>
-                    ))}
+          ))}
         </div>
       </div>
 
@@ -1071,7 +1067,7 @@ export function HairvanaInterface() {
       y: 0,
       scale: 1,
       transition: {
-        type: "spring",
+        type: 'spring',
         stiffness: 400,
         damping: 25,
       },
@@ -1089,7 +1085,7 @@ export function HairvanaInterface() {
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.8, type: "spring", stiffness: 200 }}
+        transition={{ delay: 0.5, duration: 0.8, type: 'spring', stiffness: 200 }}
       >
         <Sparkles className="w-24 h-24 mb-4" />
       </motion.div>
@@ -1214,8 +1210,8 @@ export function HairvanaInterface() {
                 key={index}
                 onClick={() => setOnboardingStep(index)} // Allow clicking circles to navigate
                 className={cnFallback(
-                  "h-2 rounded-full transition-all duration-300",
-                  index === onboardingStep ? "w-8 bg-purple-500" : "w-2 bg-gray-300"
+                  'h-2 rounded-full transition-all duration-300',
+                  index === onboardingStep ? 'w-8 bg-purple-500' : 'w-2 bg-gray-300'
                 )}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -1228,7 +1224,7 @@ export function HairvanaInterface() {
             onClick={handleOnboardingNext} // Use existing next handler
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl text-lg font-semibold shadow-lg"
           >
-            {isLastStep ? "Start Exploring →" : "Next →"}
+            {isLastStep ? 'Start Exploring →' : 'Next →'}
           </motion.button>
           {!isLastStep && (
             <motion.button
@@ -1371,7 +1367,7 @@ export function HairvanaInterface() {
     );
   };
 
-    // AR Try-On View
+  // AR Try-On View
   const renderARView = () => (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1386,21 +1382,16 @@ export function HairvanaInterface() {
           alt="AR Preview"
           className="w-full h-full object-cover opacity-70"
         />
-        {isARActive && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            {/* Simulated AR overlay for the selected style */}
-            <div className="absolute top-4 left-4 bg-purple-500 text-white px-3 py-1 rounded-full text-sm z-10">
-              🌟 {selectedStyle?.aiMatch || 92}% Match!
-            </div>
-            <div className="absolute bottom-4 right-4 bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm z-10">
-              {selectedStyle?.name || 'Curtain Bangs'}
-            </div>
-          </motion.div>
-        )}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          {/* Style information overlay */}
+          <div className="absolute bottom-4 right-4 bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm z-10">
+            {selectedStyle?.name || 'Hairstyle'}
+          </div>
+        </motion.div>
       </div>
 
       {/* Top Controls */}
@@ -1416,10 +1407,10 @@ export function HairvanaInterface() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setIsARActive(!isARActive)} // Toggle AR effect
+          onClick={() => handleAddToFavorites(selectedStyle!)}
           className="p-2 bg-black/50 rounded-full text-white"
         >
-          <Zap className="w-6 h-6" />
+          <Heart className={`w-6 h-6 ${isStyleFavorited(selectedStyle?.id || '') ? 'fill-red-500 text-red-500' : ''}`} />
         </motion.button>
       </div>
 
@@ -1469,10 +1460,10 @@ export function HairvanaInterface() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={cnFallback(
-                "flex-shrink-0 w-16 h-20 rounded-xl overflow-hidden border-2 cursor-pointer relative",
-                selectedStyle?.id === style.id ? "border-purple-500 ring-2 ring-purple-500" : "border-gray-400"
+                'flex-shrink-0 w-16 h-20 rounded-xl overflow-hidden border-2 cursor-pointer relative',
+                selectedStyle?.id === style.id ? 'border-purple-500 ring-2 ring-purple-500' : 'border-gray-400'
               )}
-                            onClick={() => {
+              onClick={() => {
                 setSelectedStyleForDetails(style);
                 setActiveView('styleDetails');
               }}
@@ -1497,20 +1488,19 @@ export function HairvanaInterface() {
             onClick={() => handleAddToFavorites(selectedStyle || defaultHairstyles[0])}
             className="flex flex-col items-center text-white text-sm opacity-80 hover:opacity-100"
           >
-            <Heart className={cnFallback("w-6 h-6 mb-1", isStyleFavorited(selectedStyle?.id || '') ? "fill-current text-red-500" : "")} />
+            <Heart className={cnFallback('w-6 h-6 mb-1', isStyleFavorited(selectedStyle?.id || '') ? 'fill-current text-red-500' : '')} />
             Save
           </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setIsARActive(!isARActive)}
+            onClick={() => setActiveView('booking')}
             className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center"
           >
-            <div className={cnFallback(
-              "w-16 h-16 rounded-full transition-colors duration-300",
-              isARActive ? "bg-red-500" : "bg-white"
-            )} />
+            <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+              <Calendar className="w-8 h-8 text-gray-800" />
+            </div>
           </motion.button>
 
           <motion.button
@@ -1527,7 +1517,7 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-    const renderGalleryView = () => (
+  const renderGalleryView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1572,7 +1562,7 @@ export function HairvanaInterface() {
               className="w-full h-40 object-cover"
             />
             <div className="p-4">
-                            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold">{style.name}</h3>
                   <motion.button
@@ -1583,13 +1573,13 @@ export function HairvanaInterface() {
                       setActiveView('favorites');
                     }}
                     className={cnFallback(
-                      "p-1 rounded-full",
-                      isStyleFavorited(style.id) ? "text-red-500" : "text-gray-400"
+                      'p-1 rounded-full',
+                      isStyleFavorited(style.id) ? 'text-red-500' : 'text-gray-400'
                     )}
                   >
                     <Heart className={cnFallback(
-                      "w-4 h-4",
-                      isStyleFavorited(style.id) ? "fill-current" : ""
+                      'w-4 h-4',
+                      isStyleFavorited(style.id) ? 'fill-current' : ''
                     )} />
                   </motion.button>
                 </div>
@@ -1601,7 +1591,7 @@ export function HairvanaInterface() {
                   <span className="text-purple-600 font-medium">{style.aiMatch}%</span>
                 </div>
               </div>
-                            <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -1634,9 +1624,9 @@ export function HairvanaInterface() {
               </div>
             )}
             <div className={cnFallback(
-              "absolute top-3 right-3 text-white text-xs px-2 py-1 rounded-full",
+              'absolute top-3 right-3 text-white text-xs px-2 py-1 rounded-full',
               style.difficulty === 'Easy' ? 'bg-green-500' :
-              style.difficulty === 'Medium' ? 'bg-yellow-500' : 'bg-red-500'
+                style.difficulty === 'Medium' ? 'bg-yellow-500' : 'bg-red-500'
             )}>
               {style.difficulty}
             </div>
@@ -1646,14 +1636,14 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-    const renderBookingView = () => (
+  const renderBookingView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
       <h2 className="text-2xl font-bold">Book a Stylist</h2>
-      
+
       <div className="space-y-4">
         {defaultStylists.map((stylist) => (
           <motion.div
@@ -1718,7 +1708,7 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-    const renderProfileView = () => (
+  const renderProfileView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1735,7 +1725,7 @@ export function HairvanaInterface() {
         </div>
       </div>
 
-            {/* Stats */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="text-center p-4 bg-purple-50 rounded-xl">
           <div className="text-2xl font-bold text-purple-600">12</div>
@@ -1763,8 +1753,8 @@ export function HairvanaInterface() {
           <h3 className="font-semibold">Favorites</h3>
           <p className="text-sm opacity-90">{favoriteStyles.length} saved styles</p>
         </motion.button>
-        
-                <motion.button
+
+        <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setActiveView('bookingHistory')} // Nav to booking history screen
@@ -1781,9 +1771,9 @@ export function HairvanaInterface() {
         <h3 className="font-semibold">Recent Activity</h3>
         <div className="space-y-3">
           {[
-            { action: "Tried AR with Curtain Bangs", time: "2 hours ago", icon: Camera },
-            { action: "Saved Beach Waves style", time: "1 day ago", icon: Heart },
-            { action: "Booked appointment with Sarah", time: "3 days ago", icon: Calendar },
+            { action: 'Tried AR with Curtain Bangs', time: '2 hours ago', icon: Camera },
+            { action: 'Saved Beach Waves style', time: '1 day ago', icon: Heart },
+            { action: 'Booked appointment with Sarah', time: '3 days ago', icon: Calendar },
           ].map((activity, index) => (
             <motion.div
               key={index}
@@ -1806,7 +1796,7 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-    const renderChatView = () => (
+  const renderChatView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1831,15 +1821,15 @@ export function HairvanaInterface() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={cnFallback(
-              "flex",
-              message.type === 'user' ? "justify-end" : "justify-start"
+              'flex',
+              message.type === 'user' ? 'justify-end' : 'justify-start'
             )}
           >
             <div className={cnFallback(
-              "max-w-xs p-3 rounded-2xl",
-              message.type === 'user' 
-                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" 
-                : "bg-gray-100 text-gray-900"
+              'max-w-xs p-3 rounded-2xl',
+              message.type === 'user'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                : 'bg-gray-100 text-gray-900'
             )}>
               <p className="text-sm">{message.text}</p>
             </div>
@@ -1851,7 +1841,7 @@ export function HairvanaInterface() {
       <div className="space-y-2">
         <p className="text-sm text-gray-600">Quick suggestions:</p>
         <div className="flex flex-wrap gap-2">
-          {["What suits my face shape?", "Show me trending styles", "Find a stylist near me"].map((suggestion) => (
+          {['What suits my face shape?', 'Show me trending styles', 'Find a stylist near me'].map((suggestion) => (
             <motion.button
               key={suggestion}
               whileHover={{ scale: 1.02 }}
@@ -1875,7 +1865,7 @@ export function HairvanaInterface() {
             adjustHeight();
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleAiCoachSend();
             }
@@ -1909,10 +1899,10 @@ export function HairvanaInterface() {
             onClick={handleAiCoachSend}
             disabled={!aiCoachInput.trim()}
             className={cnFallback(
-              "p-2 rounded-full transition-colors",
+              'p-2 rounded-full transition-colors',
               aiCoachInput.trim()
-                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                : "bg-gray-100 text-gray-400"
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                : 'bg-gray-100 text-gray-400'
             )}
           >
             <Send className="w-4 h-4" />
@@ -1922,13 +1912,13 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-      const renderEvaluationView = () => (
+  const renderEvaluationView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6 p-6" // Added padding here
     >
-            {/* Header with Back Button */}
+      {/* Header with Back Button */}
       <div className="flex items-center justify-between mb-4">
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -1962,7 +1952,7 @@ export function HairvanaInterface() {
       {/* Analysis Details */}
       <div className="space-y-4">
         <h3 className="font-semibold text-lg">Detailed Analysis</h3>
-        
+
         <div className="grid grid-cols-1 gap-4">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -2077,10 +2067,10 @@ export function HairvanaInterface() {
           Book Now
         </motion.button>
       </div>
-        </motion.div>
+    </motion.div>
   );
 
-    const renderBookAppointmentView = () => (
+  const renderBookAppointmentView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -2162,7 +2152,7 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-    const renderPaymentView = () => (
+  const renderPaymentView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -2205,22 +2195,22 @@ export function HairvanaInterface() {
       {/* Payment Method Selection */}
       <div className="space-y-4">
         <h3 className="font-semibold text-lg">Payment Options</h3>
-        
+
         <motion.button
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={() => setPaymentMethod('online')}
           className={cnFallback(
-            "w-full p-4 rounded-xl border-2 transition-all",
-            paymentMethod === 'online' 
-              ? "border-purple-500 bg-purple-50" 
-              : "border-gray-200 bg-white"
+            'w-full p-4 rounded-xl border-2 transition-all',
+            paymentMethod === 'online'
+              ? 'border-purple-500 bg-purple-50'
+              : 'border-gray-200 bg-white'
           )}
         >
           <div className="flex items-center gap-4">
             <div className={cnFallback(
-              "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-              paymentMethod === 'online' ? "border-purple-500" : "border-gray-300"
+              'w-5 h-5 rounded-full border-2 flex items-center justify-center',
+              paymentMethod === 'online' ? 'border-purple-500' : 'border-gray-300'
             )}>
               {paymentMethod === 'online' && (
                 <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
@@ -2241,16 +2231,16 @@ export function HairvanaInterface() {
           whileTap={{ scale: 0.99 }}
           onClick={() => setPaymentMethod('cash')}
           className={cnFallback(
-            "w-full p-4 rounded-xl border-2 transition-all",
-            paymentMethod === 'cash' 
-              ? "border-purple-500 bg-purple-50" 
-              : "border-gray-200 bg-white"
+            'w-full p-4 rounded-xl border-2 transition-all',
+            paymentMethod === 'cash'
+              ? 'border-purple-500 bg-purple-50'
+              : 'border-gray-200 bg-white'
           )}
         >
           <div className="flex items-center gap-4">
             <div className={cnFallback(
-              "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-              paymentMethod === 'cash' ? "border-purple-500" : "border-gray-300"
+              'w-5 h-5 rounded-full border-2 flex items-center justify-center',
+              paymentMethod === 'cash' ? 'border-purple-500' : 'border-gray-300'
             )}>
               {paymentMethod === 'cash' && (
                 <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
@@ -2279,10 +2269,10 @@ export function HairvanaInterface() {
         }}
         disabled={!paymentMethod}
         className={cnFallback(
-          "w-full py-4 rounded-xl text-lg font-semibold shadow-lg mt-6 transition-all",
-          paymentMethod 
-            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" 
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          'w-full py-4 rounded-xl text-lg font-semibold shadow-lg mt-6 transition-all',
+          paymentMethod
+            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
         )}
       >
         {paymentMethod === 'cash' ? 'Confirm Booking' : 'Continue to Payment'}
@@ -2312,17 +2302,17 @@ export function HairvanaInterface() {
       {/* Payment Type Selection */}
       <div className="space-y-4">
         <h3 className="font-semibold text-lg">Choose Payment Type</h3>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setPaymentType('card')}
             className={cnFallback(
-              "p-4 rounded-xl border-2 transition-all",
-              paymentType === 'card' 
-                ? "border-purple-500 bg-purple-50" 
-                : "border-gray-200 bg-white"
+              'p-4 rounded-xl border-2 transition-all',
+              paymentType === 'card'
+                ? 'border-purple-500 bg-purple-50'
+                : 'border-gray-200 bg-white'
             )}
           >
             <div className="text-center space-y-2">
@@ -2336,10 +2326,10 @@ export function HairvanaInterface() {
             whileTap={{ scale: 0.98 }}
             onClick={() => setPaymentType('crypto')}
             className={cnFallback(
-              "p-4 rounded-xl border-2 transition-all",
-              paymentType === 'crypto' 
-                ? "border-purple-500 bg-purple-50" 
-                : "border-gray-200 bg-white"
+              'p-4 rounded-xl border-2 transition-all',
+              paymentType === 'crypto'
+                ? 'border-purple-500 bg-purple-50'
+                : 'border-gray-200 bg-white'
             )}
           >
             <div className="text-center space-y-2">
@@ -2359,7 +2349,7 @@ export function HairvanaInterface() {
         >
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 space-y-4">
             <h4 className="font-semibold">Enter Card Details</h4>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Card Number
@@ -2425,7 +2415,7 @@ export function HairvanaInterface() {
         >
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 space-y-4">
             <h4 className="font-semibold">Connect Crypto Wallet</h4>
-            
+
             <div className="space-y-3">
               {['MetaMask', 'Coinbase Wallet', 'WalletConnect'].map((wallet) => (
                 <motion.button
@@ -2460,10 +2450,10 @@ export function HairvanaInterface() {
         onClick={handlePaymentConfirmation}
         disabled={!paymentType || (paymentType === 'card' && (!cardNumber || !expiryDate || !cvv))}
         className={cnFallback(
-          "w-full py-4 rounded-xl text-lg font-semibold shadow-lg mt-6 transition-all",
+          'w-full py-4 rounded-xl text-lg font-semibold shadow-lg mt-6 transition-all',
           (paymentType && (paymentType === 'crypto' || (paymentType === 'card' && cardNumber && expiryDate && cvv)))
-            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" 
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
         )}
       >
         Confirm Payment ($135.00)
@@ -2471,7 +2461,7 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-      const renderFavoritesView = () => (
+  const renderFavoritesView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -2604,7 +2594,7 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-    const renderHistoryView = () => (
+  const renderHistoryView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -2663,10 +2653,10 @@ export function HairvanaInterface() {
                 <div className="flex items-center justify-between text-sm mb-3">
                   <span className="text-gray-500">{item.date}</span>
                   <span className={cnFallback(
-                    "text-xs px-2 py-1 rounded-full",
+                    'text-xs px-2 py-1 rounded-full',
                     item.status === 'booked' ? 'bg-green-100 text-green-700' :
-                    item.status === 'saved' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-700'
+                      item.status === 'saved' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
                   )}>
                     {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                   </span>
@@ -2711,7 +2701,7 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-    const renderStyleDetailsView = () => (
+  const renderStyleDetailsView = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -2752,10 +2742,10 @@ export function HairvanaInterface() {
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Difficulty</span>
           <span className={cnFallback(
-            "px-2 py-1 rounded-full text-sm font-medium",
+            'px-2 py-1 rounded-full text-sm font-medium',
             selectedStyleForDetails?.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
-            selectedStyleForDetails?.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-            'bg-red-100 text-red-700'
+              selectedStyleForDetails?.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-red-100 text-red-700'
           )}>
             {selectedStyleForDetails?.difficulty}
           </span>
@@ -2770,7 +2760,7 @@ export function HairvanaInterface() {
       <div className="space-y-4">
         <h3 className="text-xl font-semibold">About This Style</h3>
         <p className="text-gray-700">
-          This {selectedStyleForDetails?.name.toLowerCase()} is perfect for those looking for a modern, versatile look. 
+          This {selectedStyleForDetails?.name.toLowerCase()} is perfect for those looking for a modern, versatile look.
           It works well with various face shapes and can be styled for both casual and formal occasions.
         </p>
       </div>
@@ -2780,10 +2770,10 @@ export function HairvanaInterface() {
         <h3 className="text-xl font-semibold">Styling Tips</h3>
         <div className="space-y-3">
           {[
-            "Use a round brush while blow-drying for volume",
-            "Apply heat protectant before styling",
-            "Finish with a light-hold hairspray",
-            "Touch up with a curling iron if needed"
+            'Use a round brush while blow-drying for volume',
+            'Apply heat protectant before styling',
+            'Finish with a light-hold hairspray',
+            'Touch up with a curling iron if needed'
           ].map((tip, index) => (
             <div key={index} className="flex items-start gap-3">
               <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -2887,13 +2877,13 @@ export function HairvanaInterface() {
               whileTap={{ scale: 0.95 }}
               onClick={() => setSettings(prev => ({ ...prev, notifications: !prev.notifications }))}
               className={cnFallback(
-                "w-12 h-6 rounded-full transition-colors",
-                settings.notifications ? "bg-purple-500" : "bg-gray-300"
+                'w-12 h-6 rounded-full transition-colors',
+                settings.notifications ? 'bg-purple-500' : 'bg-gray-300'
               )}
             >
               <div className={cnFallback(
-                "w-5 h-5 bg-white rounded-full transition-transform",
-                settings.notifications ? "translate-x-6" : "translate-x-1"
+                'w-5 h-5 bg-white rounded-full transition-transform',
+                settings.notifications ? 'translate-x-6' : 'translate-x-1'
               )} />
             </motion.button>
           </div>
@@ -3004,13 +2994,13 @@ export function HairvanaInterface() {
                 <p className="text-gray-600">{booking.stylist}</p>
               </div>
               <span className={cnFallback(
-                "px-3 py-1 rounded-full text-xs font-medium",
+                'px-3 py-1 rounded-full text-xs font-medium',
                 booking.status === 'upcoming' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
               )}>
                 {booking.status}
               </span>
             </div>
-            
+
             <div className="space-y-2 mb-4">
               <div className="flex items-center gap-2">
                 <Scissors className="w-4 h-4 text-gray-400" />
@@ -3198,9 +3188,9 @@ export function HairvanaInterface() {
         <h3 className="text-xl font-semibold">Recent Reviews</h3>
         <div className="space-y-3">
           {[
-            { name: "Sarah M.", rating: 5, text: "Amazing service! Love my new haircut.", date: "2 days ago" },
-            { name: "Mike R.", rating: 4, text: "Great atmosphere and skilled stylists.", date: "1 week ago" },
-            { name: "Emma L.", rating: 5, text: "Best salon experience I've had!", date: "2 weeks ago" },
+            { name: 'Sarah M.', rating: 5, text: 'Amazing service! Love my new haircut.', date: '2 days ago' },
+            { name: 'Mike R.', rating: 4, text: 'Great atmosphere and skilled stylists.', date: '1 week ago' },
+            { name: 'Emma L.', rating: 5, text: "Best salon experience I've had!", date: '2 weeks ago' },
           ].map((review, index) => (
             <motion.div
               key={index}
@@ -3257,7 +3247,7 @@ export function HairvanaInterface() {
     </motion.div>
   );
 
-    const viewTitles: Record<typeof activeView, string> = {
+  const viewTitles: Record<typeof activeView, string> = {
     home: 'Hairvana',
     ar: 'AR Try-On',
     gallery: 'Style Gallery',
@@ -3270,7 +3260,7 @@ export function HairvanaInterface() {
     favorites: 'My Favorites',
     salons: 'Find Salons',
     paymentDetails: 'Payment Details',
-        history: 'My History',
+    history: 'My History',
     salonDetails: 'Salon Details',
     styleDetails: 'Style Details',
     settings: 'Settings',
@@ -3291,7 +3281,7 @@ export function HairvanaInterface() {
         {appState === 'auth' && renderAuth()}
         {appState === 'main' && (
           <>
-                        {/* Header */}
+            {/* Header */}
             {/* Profile icon only on home screen app bar, exclude AR view */}
             {activeView !== 'ar' && (
               <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white">
@@ -3329,7 +3319,7 @@ export function HairvanaInterface() {
             )}
 
             {/* Main Content */}
-            <div className={cnFallback("flex-1 overflow-y-auto", !isFullScreenView && 'p-6', isFullScreenView && 'p-0')}>
+            <div className={cnFallback('flex-1 overflow-y-auto', !isFullScreenView && 'p-6', isFullScreenView && 'p-0')}>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeView}
@@ -3349,10 +3339,10 @@ export function HairvanaInterface() {
                     evaluation: renderEvaluationView,
                     salons: renderSalonFinderView,
                     favorites: renderFavoritesView,
-                                        bookAppointment: renderBookAppointmentView,
+                    bookAppointment: renderBookAppointmentView,
                     payment: renderPaymentView,
                     paymentDetails: renderPaymentDetailsView,
-                                        history: renderHistoryView,
+                    history: renderHistoryView,
                     salonDetails: renderSalonDetailsView,
                     styleDetails: renderStyleDetailsView,
                     settings: renderSettingsView,
@@ -3362,7 +3352,7 @@ export function HairvanaInterface() {
               </AnimatePresence>
             </div>
 
-                                    {/* Bottom Navigation */}
+            {/* Bottom Navigation */}
             {(activeView === 'ar' || !isFullScreenView) && (
               <div className="bg-white border-t border-gray-100 p-4">
                 <div className="flex justify-around">
@@ -3379,8 +3369,8 @@ export function HairvanaInterface() {
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setActiveView(nav.view as any)}
                       className={cnFallback(
-                        "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors",
-                        activeView === nav.view ? "text-purple-600 bg-purple-50" : "text-gray-400"
+                        'flex flex-col items-center gap-1 p-2 rounded-lg transition-colors',
+                        activeView === nav.view ? 'text-purple-600 bg-purple-50' : 'text-gray-400'
                       )}
                     >
                       <nav.icon className="w-5 h-5" />

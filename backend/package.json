@@ -1,0 +1,53 @@
+{
+  "name": "hairvana-backend",
+  "version": "1.0.0",
+  "description": "Backend server for Hairvana salon management platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "sync": "node syncDatabase.js",
+    "sync:fresh": "node syncDatabase.js",
+    "sync:alter": "node -e \"const { sequelize } = require('./models'); sequelize.sync({ alter: true }).then(() => { console.log('Database synced with alterations!'); process.exit(0); }).catch(err => { console.error('Error:', err); process.exit(1); });\"",
+    "sync:force": "node -e \"const { sequelize } = require('./models'); sequelize.sync({ force: true }).then(() => { console.log('Database synced with force (all tables dropped and recreated)!'); process.exit(0); }).catch(err => { console.error('Error:', err); process.exit(1); });\"",
+    "sync:ordered": "node -e \"const { syncOrdered } = require('./models'); syncOrdered({ force: true }).then(() => { console.log('Database synced with ordered force!'); process.exit(0); }).catch(err => { console.error('Error:', err); process.exit(1); });\"",
+    "migrate": "npx sequelize-cli db:migrate",
+    "migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "migrate:undo:all": "npx sequelize-cli db:migrate:undo:all",
+    "seed": "node seeders/seed.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "npm:cache:clean": "npm cache clean --force",
+    "kill-port-5000": "for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :5000 ^| findstr LISTENING') do taskkill /PID %a /F"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.4",
+    "axios": "^1.11.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "date-fns": "^2.30.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.0.1",
+    "express-validator": "^7.0.1",
+    "firebase": "^11.10.0",
+    "firebase-admin": "^13.4.0",
+    "html2canvas": "^1.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.3",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.1",
+    "nodemailer": "^6.10.1",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7",
+    "stripe": "^18.3.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "sequelize-cli": "^6.6.3"
+  }
+}

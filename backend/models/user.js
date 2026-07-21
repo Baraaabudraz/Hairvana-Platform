@@ -1,0 +1,131 @@
+"use strict";
+const { Model } = require("sequelize");
+const { v4: uuidv4 } = require("uuid");
+
+module.exports = (sequelize, DataTypes) => {
+  class User extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
+      User.hasOne(models.SalonOwner, {
+        foreignKey: "user_id",
+        as: "salonOwner",
+      });
+      User.hasOne(models.Customer, {
+        foreignKey: "user_id",
+        as: "customer",
+      });
+      User.hasMany(models.Salon, {
+        foreignKey: "owner_id",
+        as: "salons",
+      });
+      User.hasMany(models.Subscription, {
+        foreignKey: 'owner_id',
+        as: 'subscriptions'
+      });
+      User.hasOne(models.UserSettings, {
+        foreignKey: "user_id",
+        as: "userSettings",
+      });
+      User.hasMany(models.Report, {
+        foreignKey: "user_id",
+        as: "reports",
+      });
+      User.hasMany(models.Appointment, {
+        foreignKey: "user_id",
+        as: "appointments",
+      });
+
+      // Many-to-many relationship with notifications through NotificationUser
+      User.belongsToMany(models.Notification, {
+        through: models.NotificationUser,
+        foreignKey: "user_id",
+        otherKey: "notification_id",
+        as: "notifications",
+      });
+
+      // Direct access to the join table
+      User.hasMany(models.NotificationUser, {
+        foreignKey: "user_id",
+        as: "notificationUsers",
+      });
+
+      // Add belongsTo association to Role
+      User.belongsTo(models.Role, {
+        foreignKey: "role_id",
+        as: "role",
+      });
+    }
+  }
+  User.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: () => uuidv4(),
+        primaryKey: true,
+        allowNull: false,
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
+      password_hash: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      phone: DataTypes.STRING,
+      role_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: "roles",
+          key: "id",
+        },
+        onDelete: "SET NULL",
+      },
+      status: {
+        type: DataTypes.ENUM("active", "pending", "inactive"),
+        defaultValue: "pending",
+      },
+      avatar: DataTypes.STRING,
+      join_date: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      last_login: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      reset_token: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: 'Hashed password reset token'
+      },
+      reset_token_expires: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Expiration date for password reset token'
+      },
+      preferences: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+      },
+    },
+    {
+      sequelize,
+      modelName: "User",
+      timestamps: true,
+      underscored: true,
+    }
+  );
+  return User;
+};

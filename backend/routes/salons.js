@@ -1,0 +1,100 @@
+const express = require("express");
+const router = express.Router();
+const salonController = require("../controllers/salonController");
+const {
+  createSalonValidation,
+  updateSalonValidation,
+} = require("../validation/salonValidation");
+const validate = require("../middleware/validate");
+const {
+  authenticateToken,
+  blockUserDashboard,
+} = require("../middleware/authMiddleware");
+const checkPermission = require("../middleware/permissionMiddleware");
+const { createUploadMiddleware } = require("../helpers/uploadHelper");
+const upload = createUploadMiddleware({
+  uploadDir: '/salons',
+  maxSize: 5 * 1024 * 1024,
+  allowedTypes: ["image/jpeg", "image/png", "image/gif"],
+});
+
+// Protect all routes
+router.use(authenticateToken);
+router.use(blockUserDashboard());
+
+// GET all salons
+router.get(
+  "/",
+  checkPermission("salons", "view"),
+  salonController.getAllSalons
+);
+
+// GET salon by ID
+router.get(
+  "/:id",
+  checkPermission("salons", "view"),
+  salonController.getSalonById
+);
+
+// POST a new salon with validation
+router.post(
+  "/",
+  checkPermission("salons", "add"),
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "gallery", maxCount: 5 },
+  ]),
+  createSalonValidation,
+  validate,
+  salonController.createSalon
+);
+
+// PUT (update) a salon by ID with validation
+router.put(
+  "/:id",
+  checkPermission("salons", "edit"),
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "gallery", maxCount: 5 },
+  ]),
+  updateSalonValidation,
+  validate,
+  salonController.updateSalon
+);
+
+// DELETE a salon by ID - super_admin only
+router.delete(
+  "/:id",
+  checkPermission("salons", "delete"),
+  salonController.deleteSalon
+);
+
+// PATCH update salon status - super_admin only
+router.patch(
+  "/:id/status",
+  checkPermission("salons", "edit"),
+  salonController.updateSalonStatus
+);
+
+// GET salon services
+router.get(
+  "/:id/services",
+  checkPermission("salons", "view"),
+  salonController.getSalonServices
+);
+
+// GET salon staff
+router.get(
+  "/:id/staff",
+  checkPermission("salons", "view"),
+  salonController.getSalonStaff
+);
+
+// GET salon appointments
+router.get(
+  "/:id/appointments",
+  checkPermission("salons", "view"),
+  salonController.getSalonAppointments
+);
+
+module.exports = router;

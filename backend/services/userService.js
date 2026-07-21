@@ -1,0 +1,328 @@
+const bcrypt = require('bcryptjs');
+const userRepository = require('../repositories/userRepository');
+const { serializeUser } = require('../serializers/userSerializer');
+const { getFileInfo } = require('../helpers/uploadHelper');
+const { buildAvatarUrl } = require('../helpers/urlHelper');
+const fs = require('fs');
+const path = require('path');
+const { Role, SalonOwner, Salon, Customer } = require('../models');
+
+const normalizeRoleName = (roleName) =>
+  typeof roleName === 'string' ? roleName.toLowerCase().trim() : '';
+
+exports.getAllUsers = async (query, req) => {
+  try {
+    const { role, role_id, status, search, page = 1, limit = 10 } = query;
+    const where = {};
+    
+    // Handle role_id filtering (UUID format from frontend)
+    if (role_id && role_id !== 'all') {
+      console.log('Filtering users by role_id:', role_id);
+      where.role_id = role_id;
+    }
+    // Handle legacy role filtering (string format)
+    else if (role && role !== 'all') {
+      if (role === 'admin') {
+        where.role = ['admin', 'super admin'];
+      } else {
+        where.role = role;
+      }
+    }
+    
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+    if (search) {
+      const { Op } = require('sequelize');
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+    const parsedLimit = parseInt(limit, 10) || 10;
+    const parsedPage = parseInt(page, 10) || 1;
+    const offset = (parsedPage - 1) * parsedLimit;
+    console.log('Database query where clause:', where);
+    const { rows, count } = await userRepository.findAll({ where, limit: parsedLimit, offset });
+    console.log(`Query returned ${count} users (showing ${rows.length} on page ${parsedPage})`);
+    const users = rows.map(user => serializeUser(user, { req }));
+    const stats = {
+      total: count,
+              admin: users.filter(u => u.role === 'admin' || u.role === 'super admin').length,
+        salon: users.filter(u => u.role === 'salon owner').length,
+        customer: users.filter(u => u.role === 'customer').length,
+      active: users.filter(u => u.status === 'active').length,
+      pending: users.filter(u => u.status === 'pending').length,
+      suspended: users.filter(u => u.status === 'suspended').length,
+    };
+
+    // Fetch roles from database
+    let rolesArray = [];
+    try {
+      const { Role } = require('../models');
+      const roles = await Role.findAll({
+        attributes: ['id', 'name', 'description', 'color']
+      });
+      rolesArray = roles.map((role) => ({
+          id: role.id,
+          name: role.name,
+          description: role.description,
+          color: role.color,
+        }));
+    } catch (roleError) {
+      console.warn('Failed to fetch roles:', roleError.message);
+      // If roles table doesn't exist, provide default roles
+      rolesArray = [
+        { id: '1', name: 'admin', description: 'Administrator', color: '#3B82F6' },
+        { id: '2', name: 'super admin', description: 'Super Administrator', color: '#8B5CF6' },
+        { id: '3', name: 'salon', description: 'Salon Owner', color: '#10B981' },
+        { id: '4', name: 'user', description: 'Regular User', color: '#6B7280' }
+      ];
+    }
+
+    return {
+      users,
+      stats,
+      roles: rolesArray,
+      total: count,
+      page: parsedPage,
+      limit: parsedLimit,
+      totalPages: Math.ceil(count / parsedLimit)
+    };
+  } catch (err) {
+    throw new Error('Failed to get users: ' + err.message);
+  }
+};
+
+exports.getUserById = async (id, req) => {
+  if (!id) throw new Error('User ID is required');
+  try {
+    const user = await userRepository.findById(id);
+    if (!user) return null;
+    return serializeUser(user, { req });
+  } catch (err) {
+    throw new Error('Failed to get user: ' + err.message);
+  }
+};
+
+exports.createUser = async (userData, req) => {
+  if (!userData || typeof userData !== 'object') throw new Error('User data is required');
+  if (!userData.password) throw new Error('Password is required');
+  try {
+    // Resolve role name based on role_id if not explicitly provided
+    let roleName = userData.role;
+    if ((!roleName || typeof roleName !== 'string') && userData.role_id) {
+      const roleRecord = await Role.findByPk(userData.role_id);
+      roleName = roleRecord ? roleRecord.name : null;
+    }
+    const normalizedRole = normalizeRoleName(roleName);
+
+    // Handle avatar upload
+    if (req.file) {
+      userData.avatar = req.file.filename;
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(userData.password, salt);
+    userData.password_hash = hashedPassword; // Use snake_case to match model
+    delete userData.password;
+    userData.status = 'active';
+    const newUser = await userRepository.create(userData);
+
+    // Role-specific logic (still in service)
+    if (normalizedRole.includes('salon')) {
+      await SalonOwner.create({
+        user_id: newUser.id,
+        total_salons: 0,
+        total_revenue: 0,
+        total_bookings: 0
+      });
+
+      if (userData.salonName) {
+        await Salon.create({
+          name: userData.salonName,
+          email: userData.email,
+          phone: userData.phone || null,
+          owner_id: newUser.id,
+          business_license: userData.businessLicense || null,
+          status: 'pending',
+          description: `Primary salon for ${userData.name}`,
+        });
+      }
+    } else if (normalizedRole.includes('customer')) {
+      await Customer.create({
+        user_id: newUser.id,
+        total_spent: 0,
+        total_bookings: 0,
+        favorite_services: []
+      });
+    }
+    return serializeUser(newUser, { req, avatarFilenameOnly: false });
+  } catch (err) {
+    if (err.name && err.name === 'SequelizeValidationError') {
+      throw Object.assign(new Error('Validation error'), { errors: err.errors });
+    }
+    throw new Error('Failed to create user: ' + err.message);
+  }
+};
+
+exports.updateUser = async (id, userData, req) => {
+  if (!id) throw new Error('User ID is required');
+  if (!userData || typeof userData !== 'object') throw new Error('User data is required');
+  try {
+    // Get the old user before updating
+    const oldUser = await userRepository.findById(id);
+    // Handle avatar upload
+    if (req.file) {
+      userData.avatar = req.file.filename;
+      // Delete old avatar if changed
+      if (oldUser && oldUser.avatar && oldUser.avatar !== userData.avatar) {
+        const avatarPath = path.join(__dirname, '../public/uploads/avatars', oldUser.avatar);
+        fs.unlink(avatarPath, (err) => { /* ignore error if file doesn't exist */ });
+      }
+    }
+    if (userData.password) {
+      const salt = await bcrypt.genSalt(10);
+      userData.password_hash = await bcrypt.hash(userData.password, salt);
+      delete userData.password;
+    }
+    const [affectedRows, [updatedUser]] = await userRepository.update(id, userData);
+    if (!updatedUser) return null;
+    return serializeUser(updatedUser, { req, avatarFilenameOnly: false });
+  } catch (err) {
+    if (err.name && err.name === 'SequelizeValidationError') {
+      throw Object.assign(new Error('Validation error: ' + err.message), { errors: err.errors });
+    }
+    throw new Error('Failed to update user: ' + err.message);
+  }
+};
+
+exports.deleteUser = async (id) => {
+  if (!id) throw new Error('User ID is required');
+  try {
+    // Get the user before deleting
+    const user = await userRepository.findById(id);
+    // Delete the user
+    const deleted = await userRepository.delete(id);
+    if (!deleted) return null;
+    // Delete avatar file if it exists
+    if (user && user.avatar) {
+      const avatarPath = path.join(__dirname, '../public/uploads/avatars', user.avatar);
+      fs.unlink(avatarPath, (err) => { /* ignore error if file doesn't exist */ });
+    }
+    return { message: 'User deleted successfully' };
+  } catch (err) {
+    throw new Error('Failed to delete user: ' + err.message);
+  }
+};
+
+exports.updateUserStatus = async (id, status, req) => {
+  if (!id) throw new Error('User ID is required');
+  if (!['active', 'pending', 'suspended'].includes(status)) throw new Error('Invalid status');
+  try {
+    const [affectedRows] = await userRepository.updateStatus(id, status);
+    if (!affectedRows) return null;
+    const updatedUser = await userRepository.findById(id);
+    return serializeUser(updatedUser, { req });
+  } catch (err) {
+    throw new Error('Failed to update user status: ' + err.message);
+  }
+};
+
+/**
+ * Check if email exists (excluding current user)
+ * @param {string} email - Email to check
+ * @param {string} excludeUserId - User ID to exclude from check
+ * @returns {Promise<boolean>} True if email exists
+ */
+exports.checkEmailExists = async (email, excludeUserId = null) => {
+  if (!email) throw new Error('Email is required');
+  try {
+    const where = { email: email.toLowerCase().trim() };
+    if (excludeUserId) {
+      where.id = { [require('sequelize').Op.ne]: excludeUserId };
+    }
+    const existingUser = await userRepository.findOne({ where });
+    return !!existingUser;
+  } catch (err) {
+    throw new Error('Failed to check email existence: ' + err.message);
+  }
+};
+
+/**
+ * Upload user avatar
+ * @param {string} userId - User ID
+ * @param {Object} file - Uploaded file object
+ * @param {Object} req - Request object for URL building
+ * @returns {Promise<Object>} Avatar data
+ */
+exports.uploadAvatar = async (userId, file, req) => {
+  if (!userId) throw new Error('User ID is required');
+  if (!file) throw new Error('File is required');
+  
+  try {
+    // Get user to check if exists
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Delete old avatar if exists
+    if (user.avatar) {
+      const oldAvatarPath = path.join(__dirname, '../public/uploads/avatars', user.avatar);
+      fs.unlink(oldAvatarPath, (err) => { /* ignore error if file doesn't exist */ });
+    }
+
+    // Process new avatar
+    const avatarInfo = getFileInfo(file, '/images/avatars');
+    
+    // Update user with new avatar
+    await userRepository.update(userId, { avatar: avatarInfo.storedName });
+    
+    // Build full URL using urlHelper
+    const fullUrl = buildAvatarUrl(avatarInfo.storedName, { req });
+    
+    return {
+      avatar: avatarInfo.storedName,
+      url: fullUrl,
+      filename: avatarInfo.storedName
+    };
+  } catch (err) {
+    throw new Error('Failed to upload avatar: ' + err.message);
+  }
+};
+
+/**
+ * Change user password
+ * @param {string} userId - User ID
+ * @param {string} oldPassword - Current password
+ * @param {string} newPassword - New password
+ * @returns {Promise<void>}
+ */
+exports.changePassword = async (userId, oldPassword, newPassword) => {
+  if (!userId) throw new Error('User ID is required');
+  if (!oldPassword) throw new Error('Old password is required');
+  if (!newPassword) throw new Error('New password is required');
+  
+  try {
+    // Get user
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Verify old password
+    const isValidPassword = await bcrypt.compare(oldPassword, user.password_hash);
+    if (!isValidPassword) {
+      throw new Error('Old password is incorrect');
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    await userRepository.update(userId, { password_hash: hashedPassword });
+  } catch (err) {
+    throw new Error('Failed to change password: ' + err.message);
+  }
+}; 

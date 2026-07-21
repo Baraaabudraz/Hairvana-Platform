@@ -1,0 +1,133 @@
+import { apiFetch } from '@/lib/api';
+
+export async function fetchSalons(params: { status?: string; search?: string; ownerId?: string; page?: number; limit?: number } = {}) {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    if (params.status && params.status !== 'all') queryParams.append('status', params.status);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.ownerId) queryParams.append('ownerId', params.ownerId);
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    
+    return await apiFetch(`/salons?${queryParams.toString()}`);
+  } catch (error) {
+    console.error('Error fetching salons:', error);
+    throw error;
+  }
+}
+
+export async function fetchSalonById(id: string) {
+  try {
+    return await apiFetch(`/salons/${id}`);
+  } catch (error) {
+    console.error(`Error fetching salon with ID ${id}:`, error);
+    throw error;
+  }
+}
+
+export async function createSalon(salonData: any) {
+  try {
+    return await apiFetch('/salons', {
+      method: 'POST',
+      body: JSON.stringify(salonData),
+    });
+  } catch (error) {
+    console.error('Error creating salon:', error);
+    throw error;
+  }
+}
+
+export async function updateSalon(id: string, salonData: any) {
+  try {
+    let formData: FormData;
+    
+    // If salonData is already FormData, use it directly
+    if (salonData instanceof FormData) {
+      formData = salonData;
+    } else {
+      // Convert salonData object to FormData
+      formData = new FormData();
+      Object.keys(salonData).forEach(key => {
+        if (key === 'images' && Array.isArray(salonData[key])) {
+          // Handle multiple images
+          salonData[key].forEach((image: File | string) => {
+            if (image instanceof File) {
+              formData.append('images', image);
+            } else {
+              formData.append('existingImages', image);
+            }
+          });
+        } else if (salonData[key] !== undefined && salonData[key] !== null) {
+          formData.append(key, salonData[key].toString());
+        }
+      });
+    }
+
+    return await apiFetch(`/salons/${id}`, {
+      method: 'PUT',
+      body: formData,
+      // Don't set Content-Type - browser will set it automatically with boundary
+      headers: {},
+    });
+  } catch (error) {
+    console.error(`Error updating salon with ID ${id}:`, error);
+    throw error;
+  }
+}
+
+export async function deleteSalon(id: string) {
+  try {
+    return await apiFetch(`/salons/${id}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error(`Error deleting salon with ID ${id}:`, error);
+    throw error;
+  }
+}
+
+export async function fetchSalonServices(salonId: string) {
+  try {
+    return await apiFetch(`/salons/${salonId}/services`);
+  } catch (error) {
+    console.error(`Error fetching services for salon with ID ${salonId}:`, error);
+    throw error;
+  }
+}
+
+export async function fetchSalonStaff(salonId: string) {
+  try {
+    return await apiFetch(`/salons/${salonId}/staff`);
+  } catch (error) {
+    console.error(`Error fetching staff for salon with ID ${salonId}:`, error);
+    throw error;
+  }
+}
+
+export async function fetchSalonAppointments(salonId: string, params: { status?: string; from?: string; to?: string } = {}) {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    if (params.status && params.status !== 'all') queryParams.append('status', params.status);
+    if (params.from) queryParams.append('from', params.from);
+    if (params.to) queryParams.append('to', params.to);
+    
+    return await apiFetch(`/salons/${salonId}/appointments?${queryParams.toString()}`);
+  } catch (error) {
+    console.error(`Error fetching appointments for salon with ID ${salonId}:`, error);
+    throw error;
+  }
+}
+
+export async function updateSalonStatus(id: string, status: 'active' | 'pending' | 'suspended') {
+  try {
+    return await apiFetch(`/salons/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  } catch (error) {
+    console.error(`Error updating status for salon with ID ${id}:`, error);
+    throw error;
+  }
+}

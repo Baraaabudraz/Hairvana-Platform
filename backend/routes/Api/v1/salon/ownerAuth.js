@@ -1,0 +1,78 @@
+const express = require("express");
+const router = express.Router();
+const { createUploadMiddleware } = require('../../../../helpers/uploadHelper');
+const ownerAuthController = require('../../../../controllers/Api/salon/auth/ownerAuthController');
+const ownerProfileController = require('../../../../controllers/Api/salon/ownerProfileController');
+const { authenticateOwner, authenticateForLogout } = require('../../../../middleware/passportMiddleware');
+const { loginRateLimit, registerRateLimit, passwordChangeRateLimit } = require('../../../../middleware/rateLimitMiddleware');
+// Multer setup for file uploads using uploadHelper
+const upload = createUploadMiddleware({
+  uploadDir: "/owner_docs",
+  allowedTypes: ["image/jpeg", "image/png", "application/pdf"],
+  maxSize: 10 * 1024 * 1024, // 10MB
+});
+
+const uploadAvatar = createUploadMiddleware({
+  uploadDir: "/avatars",
+  allowedTypes: ["image/jpeg", "image/png"],
+  maxSize: 5 * 1024 * 1024, // 5MB
+});
+
+// Register
+router.post("/register", upload.none(), registerRateLimit, ownerAuthController.register);
+
+// Login
+router.post("/login", loginRateLimit, ownerAuthController.login);
+
+// Logout
+router.post(
+  "/logout",
+  authenticateForLogout,
+  ownerAuthController.logout
+);
+
+// Upload documents
+router.post(
+  "/upload-documents",
+  authenticateOwner,
+  upload.fields([
+    { name: "commercial_registration", maxCount: 1 },
+    { name: "certificate", maxCount: 1 },
+  ]),
+  ownerAuthController.uploadDocuments
+);
+
+// Password reset routes (public)
+router.post("/forget-password",
+  [
+    require('express-validator').body('email')
+      .isEmail()
+      .withMessage('Valid email is required')
+  ],
+  require('../../../../middleware/validate'),
+  ownerAuthController.forgetPassword
+);
+
+router.post("/reset-password",
+  [
+    require('express-validator').body('token')
+      .notEmpty()
+      .withMessage('Reset token is required'),
+    require('express-validator').body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters long')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+      .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+    require('express-validator').body('confirmPassword')
+      .custom((value, { req }) => {
+        if (value !== req.body.password) {
+          throw new Error('Passwords do not match');
+        }
+        return true;
+      })
+  ],
+  require('../../../../middleware/validate'),
+  ownerAuthController.resetPassword
+);
+
+module.exports = router;
