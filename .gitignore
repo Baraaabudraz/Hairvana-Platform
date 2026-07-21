@@ -41,7 +41,9 @@ yarn-error.log*
 next-env.d.ts
 .env
 
+
 # public
 /public
 /dist
 backend/config/up-lancer-ac146cc55400.json
+
