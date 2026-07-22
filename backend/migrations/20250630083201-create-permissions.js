@@ -1,29 +1,37 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async (t) => {
-      await queryInterface.createTable("billing_settings", {
+      await queryInterface.createTable("permissions", {
         id: {
           type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
           allowNull: false,
           primaryKey: true,
         },
-        user_id: {
+        role_id: {
           type: Sequelize.UUID,
           allowNull: false,
-          references: { model: "users", key: "id" },
-          onUpdate: "CASCADE",
+          references: {
+            model: "roles",
+            key: "id",
+          },
           onDelete: "CASCADE",
         },
-        default_payment_method: { type: Sequelize.STRING, allowNull: true },
-        // billing_address is TEXT directly — previously altered from JSONB
-        billing_address: { type: Sequelize.TEXT, allowNull: true },
-        tax_id: { type: Sequelize.STRING, allowNull: true },
-        invoice_email: { type: Sequelize.STRING, allowNull: false },
-        auto_pay: { type: Sequelize.BOOLEAN, defaultValue: false },
-        payment_methods: { type: Sequelize.JSONB, allowNull: true },
+        resource: {
+          type: Sequelize.STRING,
+          allowNull: false,
+        },
+        action: {
+          type: Sequelize.STRING,
+          allowNull: false,
+        },
+        allowed: {
+          type: Sequelize.BOOLEAN,
+          allowNull: false,
+          defaultValue: true,
+        },
         created_at: {
           type: Sequelize.DATE,
           allowNull: false,
@@ -35,12 +43,19 @@ module.exports = {
           defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
         },
       }, { transaction: t });
+
+      await queryInterface.addConstraint("permissions", {
+        fields: ["role_id", "resource", "action"],
+        type: "unique",
+        name: "unique_role_resource_action",
+        transaction: t
+      });
     });
   },
 
   async down(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async (t) => {
-      await queryInterface.dropTable("billing_settings", { transaction: t });
+      await queryInterface.dropTable("permissions", { transaction: t });
     });
   },
 };
