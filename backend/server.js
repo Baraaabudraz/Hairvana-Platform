@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const passport = require('./config/passport');
-const { sequelize } = require("./lib/supabase");
+const { sequelize } = require("./models");
 
 // Passenger setup
 if (typeof PhusionPassenger !== "undefined") {

@@ -2,9 +2,9 @@
   "development": {
     "username": "postgres",
     "password": "root",
-    "database": "hairvana_new",
+    "database": "hairvana",
     "host": "localhost",
-    "port": 5432,
+    "port": 5433,
     "dialect": "postgres",
     "logging": false
   },
@@ -13,7 +13,7 @@
     "password": "root",
     "database": "hairvana_test",
     "host": "127.0.0.1",
-    "port": 5432,
+    "port": 5433,
     "dialect": "postgres",
     "logging": false
   },
@@ -22,7 +22,7 @@
     "password": "root",
     "database": "hairvana_prod",
     "host": "127.0.0.1",
-    "port": 5432,
+    "port": 5433,
     "dialect": "postgres",
     "logging": false,
     "pool": {
