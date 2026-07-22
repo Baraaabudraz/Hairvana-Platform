@@ -12,6 +12,7 @@
     "sync:force": "node -e \"const { sequelize } = require('./models'); sequelize.sync({ force: true }).then(() => { console.log('Database synced with force (all tables dropped and recreated)!'); process.exit(0); }).catch(err => { console.error('Error:', err); process.exit(1); });\"",
     "sync:ordered": "node -e \"const { syncOrdered } = require('./models'); syncOrdered({ force: true }).then(() => { console.log('Database synced with ordered force!'); process.exit(0); }).catch(err => { console.error('Error:', err); process.exit(1); });\"",
     "migrate": "npx sequelize-cli db:migrate",
+    "migrate:fresh": "node -e \"const { sequelize } = require('./models'); sequelize.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;').then(()=>{ console.log('Schema reset. Running migrations...'); require('child_process').execSync('npx sequelize-cli db:migrate', { stdio: 'inherit' }); process.exit(0); }).catch(e=>{ console.error(e.message); process.exit(1); });\"",
     "migrate:undo": "npx sequelize-cli db:migrate:undo",
     "migrate:undo:all": "npx sequelize-cli db:migrate:undo:all",
     "seed": "node seeders/seed.js",

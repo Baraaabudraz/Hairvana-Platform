@@ -359,12 +359,12 @@ async function seedSubscriptions() {
     // Subscriptions are already deleted in seedSubscriptionPlans, so no need to delete again
 
     // Get salons and plans
-    const salons = await db.Salon.findAll({ attributes: ["id"] });
+    const salons = await db.Salon.findAll();
     const plans = await db.SubscriptionPlan.findAll({ attributes: ["id"] });
 
     const subscriptions = salons.map((salon, index) => ({
       id: `00000000-0000-0000-0000-00000000000${index + 1}`,
-      salonId: salon.id,
+      ownerId: salon.owner_id || salon.ownerId,
       planId: plans[index % plans.length].id,
       status: 'active',
       startDate: new Date('2024-01-01'),

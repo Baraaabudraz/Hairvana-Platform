@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const passport = require('./config/passport');
-const { sequelize } = require("./lib/supabase");
+const { sequelize } = require("./models");
 
 // Passenger setup
 if (typeof PhusionPassenger !== "undefined") {
@@ -102,7 +102,7 @@ app.use(
   require("./routes/Api/v1/customer/devices")
 );
 app.use("/backend/images", require("./routes/images"));
-app.use('/backend/api/v0/customer/hairstyle-tryon', require('./routes/Api/v0/customer/hairstyleTryOn'));
+app.use('/backend/api/v1/customer/hairstyle-tryon', require('./routes/Api/v1/customer/hairstyleTryOn'));
 
 
 // Mobile API Routes for Salon Owner

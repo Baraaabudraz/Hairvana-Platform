@@ -1,48 +1,50 @@
-'use strict';
+"use strict";
+
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('hairstyles', {
-      id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        primaryKey: true,
-      },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      description: Sequelize.TEXT,
-      tags: Sequelize.ARRAY(Sequelize.STRING),
-      image_url: Sequelize.STRING,
-      ar_model_url: Sequelize.STRING,
-      gender: Sequelize.STRING,
-      length: Sequelize.STRING,
-      color: Sequelize.STRING,
-      salon_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'salons',
-          key: 'id'
+  async up(queryInterface, Sequelize) {
+    await queryInterface.sequelize.transaction(async (t) => {
+      await queryInterface.createTable("hairstyles", {
+        id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+          primaryKey: true,
         },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
-      },
-      created_at: {
-        allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
-      },
-      updated_at: {
-        allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
-      }
+        name: {
+          type: Sequelize.STRING,
+          allowNull: false,
+        },
+        description: { type: Sequelize.TEXT },
+        tags: { type: Sequelize.ARRAY(Sequelize.STRING) },
+        image_url: { type: Sequelize.STRING },
+        // ar_model_url intentionally omitted — AR feature removed
+        gender: { type: Sequelize.STRING },
+        length: { type: Sequelize.STRING },
+        color: { type: Sequelize.STRING },
+        salon_id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+          references: { model: "salons", key: "id" },
+          onDelete: "CASCADE",
+          onUpdate: "CASCADE",
+        },
+        created_at: {
+          allowNull: false,
+          type: Sequelize.DATE,
+          defaultValue: Sequelize.fn("NOW"),
+        },
+        updated_at: {
+          allowNull: false,
+          type: Sequelize.DATE,
+          defaultValue: Sequelize.fn("NOW"),
+        },
+      }, { transaction: t });
     });
   },
-  down: async (queryInterface, Sequelize) => {
-    // Remove the salon_id column if it exists before dropping the table
-    await queryInterface.removeColumn('hairstyles', 'salon_id').catch(() => {});
-    await queryInterface.dropTable('hairstyles');
-  }
-}; 
+
+  async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.transaction(async (t) => {
+      await queryInterface.dropTable("hairstyles", { transaction: t });
+    });
+  },
+};
