@@ -100,32 +100,131 @@ const createSalonValidation = [
   body('hours')
     .optional()
     .custom((value) => {
-      // Allow object, array, or string format
-      if (typeof value === 'object' && value !== null) {
-        return true; // Object or array is valid
-      }
-      if (typeof value === 'string') {
-        // Try to parse as JSON if it looks like JSON
-        if (value.startsWith('{') && value.endsWith('}')) {
-          try {
-            JSON.parse(value);
-            return true;
-          } catch (e) {
-            throw new Error('Hours must be valid JSON if provided as string');
-          }
-        }
-        return true; // Plain string is valid
-      }
       if (value === undefined || value === null) {
         return true; // Optional field
       }
-      throw new Error('Hours must be an object, array, or string');
+      
+      // If it's a string, try to parse as JSON
+      if (typeof value === 'string') {
+        if (value.startsWith('{') && value.endsWith('}')) {
+          try {
+            value = JSON.parse(value);
+          } catch (e) {
+            throw new Error('Hours must be valid JSON if provided as string');
+          }
+        } else {
+          throw new Error('Hours must be a valid JSON object');
+        }
+      }
+      
+      // Handle array format (e.g., ["friday: 9:00 AM - 9:00 PM"])
+      if (Array.isArray(value)) {
+        const validTimeFormats = [
+          /^Closed$/i,
+          /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i,
+          /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/,
+          /^24\/7$/i
+        ];
+        
+        for (const hour of value) {
+          if (typeof hour === 'string') {
+            // Try to parse "day: time" format (e.g., "friday: 9:00 AM - 9:00 PM")
+            const colonIndex = hour.indexOf(':');
+            if (colonIndex !== -1) {
+              const day = hour.substring(0, colonIndex).trim().toLowerCase();
+              const time = hour.substring(colonIndex + 1).trim();
+              
+              // Validate day
+              const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+              if (!validDays.includes(day)) {
+                throw new Error(`Invalid day: ${day}. Must be one of: ${validDays.join(', ')}`);
+              }
+              
+              // Check for incomplete time formats
+              if (time.trim() === ' - ' || time.trim() === '-' || time.trim() === '') {
+                throw new Error(`Hours for ${day} cannot be empty or incomplete. Use "Closed" or a valid time range like "9:00 AM - 5:00 PM"`);
+              }
+              
+              // Validate time format
+              const isValidFormat = validTimeFormats.some(format => format.test(time.trim()));
+              if (!isValidFormat) {
+                throw new Error(`Invalid time format for ${day}: "${time}". Use "Closed", "9:00 AM - 5:00 PM", "9:00-17:00", or "24/7"`);
+              }
+            } else {
+              throw new Error(`Invalid hours format: "${hour}". Expected format: "day: time" (e.g., "friday: 9:00 AM - 9:00 PM")`);
+            }
+          } else {
+            throw new Error('Each hours entry must be a string');
+          }
+        }
+        return true;
+      }
+      
+      // Now validate the object structure
+      if (typeof value === 'object' && value !== null) {
+        const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const validTimeFormats = [
+          /^Closed$/i,
+          /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i,
+          /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/,
+          /^24\/7$/i
+        ];
+        
+        for (const [day, time] of Object.entries(value)) {
+          if (!validDays.includes(day.toLowerCase())) {
+            throw new Error(`Invalid day: ${day}. Must be one of: ${validDays.join(', ')}`);
+          }
+          
+          if (typeof time !== 'string') {
+            throw new Error(`Hours for ${day} must be a string`);
+          }
+          
+          // Check for incomplete time formats
+          if (time.trim() === ' - ' || time.trim() === '-' || time.trim() === '') {
+            throw new Error(`Hours for ${day} cannot be empty or incomplete. Use "Closed" or a valid time range like "9:00 AM - 5:00 PM"`);
+          }
+          
+          // Validate time format
+          const isValidFormat = validTimeFormats.some(format => format.test(time.trim()));
+          if (!isValidFormat) {
+            throw new Error(`Invalid time format for ${day}: "${time}". Use "Closed", "9:00 AM - 5:00 PM", "9:00-17:00", or "24/7"`);
+          }
+        }
+        
+        return true;
+      }
+      
+      throw new Error('Hours must be an object or array with valid day-time pairs');
     })
-    .withMessage('Hours must be an object, array, or string'),
+    .withMessage('Hours must be a valid object or array with proper time formats'),
   
   body('services')
     .optional()
-    .isArray()
+    .custom((value) => {
+      if (value === undefined || value === null) {
+        return true; // Optional field
+      }
+      
+      // If it's a string, try to parse as JSON
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (!Array.isArray(parsed)) {
+            throw new Error('Services must be an array');
+          }
+          return true;
+        } catch (e) {
+          throw new Error('Services must be a valid JSON array if provided as string');
+        }
+      }
+      
+      // If it's already an array, validate it
+      if (Array.isArray(value)) {
+        return true;
+      }
+      
+      throw new Error('Services must be an array');
+    })
     .withMessage('Services must be an array'),
   
   body('amenities')
@@ -268,7 +367,31 @@ const updateSalonValidation = [
   
   body('services')
     .optional()
-    .isArray()
+    .custom((value) => {
+      if (value === undefined || value === null) {
+        return true; // Optional field
+      }
+      
+      // If it's a string, try to parse as JSON
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (!Array.isArray(parsed)) {
+            throw new Error('Services must be an array');
+          }
+          return true;
+        } catch (e) {
+          throw new Error('Services must be a valid JSON array if provided as string');
+        }
+      }
+      
+      // If it's already an array, validate it
+      if (Array.isArray(value)) {
+        return true;
+      }
+      
+      throw new Error('Services must be an array');
+    })
     .withMessage('Services must be an array'),
   
   body('amenities')
@@ -405,16 +528,103 @@ const updateSalonProfileValidation = [
   body('hours')
     .optional()
     .custom((value) => {
-      // Allow object, array, or string format
-      if (typeof value === 'object' && value !== null) {
-        return true; // Object or array is valid
+      if (value === undefined || value === null) {
+        return true; // Optional field
       }
+      
+      // If it's a string, try to parse as JSON
       if (typeof value === 'string') {
-        return true; // String is valid
+        if (value.startsWith('{') && value.endsWith('}')) {
+          try {
+            value = JSON.parse(value);
+          } catch (e) {
+            throw new Error('Hours must be valid JSON if provided as string');
+          }
+        } else {
+          throw new Error('Hours must be a valid JSON object');
+        }
       }
-      throw new Error('Hours must be an object, array, or string');
+      
+      // Handle array format (e.g., ["friday: 9:00 AM - 9:00 PM"])
+      if (Array.isArray(value)) {
+        const validTimeFormats = [
+          /^Closed$/i,
+          /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i,
+          /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/,
+          /^24\/7$/i
+        ];
+        
+        for (const hour of value) {
+          if (typeof hour === 'string') {
+            // Try to parse "day: time" format (e.g., "friday: 9:00 AM - 9:00 PM")
+            const colonIndex = hour.indexOf(':');
+            if (colonIndex !== -1) {
+              const day = hour.substring(0, colonIndex).trim().toLowerCase();
+              const time = hour.substring(colonIndex + 1).trim();
+              
+              // Validate day
+              const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+              if (!validDays.includes(day)) {
+                throw new Error(`Invalid day: ${day}. Must be one of: ${validDays.join(', ')}`);
+              }
+              
+              // Check for incomplete time formats
+              if (time.trim() === ' - ' || time.trim() === '-' || time.trim() === '') {
+                throw new Error(`Hours for ${day} cannot be empty or incomplete. Use "Closed" or a valid time range like "9:00 AM - 5:00 PM"`);
+              }
+              
+              // Validate time format
+              const isValidFormat = validTimeFormats.some(format => format.test(time.trim()));
+              if (!isValidFormat) {
+                throw new Error(`Invalid time format for ${day}: "${time}". Use "Closed", "9:00 AM - 5:00 PM", "9:00-17:00", or "24/7"`);
+              }
+            } else {
+              throw new Error(`Invalid hours format: "${hour}". Expected format: "day: time" (e.g., "friday: 9:00 AM - 9:00 PM")`);
+            }
+          } else {
+            throw new Error('Each hours entry must be a string');
+          }
+        }
+        return true;
+      }
+      
+      // Now validate the object structure
+      if (typeof value === 'object' && value !== null) {
+        const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const validTimeFormats = [
+          /^Closed$/i,
+          /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i,
+          /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/,
+          /^24\/7$/i
+        ];
+        
+        for (const [day, time] of Object.entries(value)) {
+          if (!validDays.includes(day.toLowerCase())) {
+            throw new Error(`Invalid day: ${day}. Must be one of: ${validDays.join(', ')}`);
+          }
+          
+          if (typeof time !== 'string') {
+            throw new Error(`Hours for ${day} must be a string`);
+          }
+          
+          // Check for incomplete time formats
+          if (time.trim() === ' - ' || time.trim() === '-' || time.trim() === '') {
+            throw new Error(`Hours for ${day} cannot be empty or incomplete. Use "Closed" or a valid time range like "9:00 AM - 5:00 PM"`);
+          }
+          
+          // Validate time format
+          const isValidFormat = validTimeFormats.some(format => format.test(time.trim()));
+          if (!isValidFormat) {
+            throw new Error(`Invalid time format for ${day}: "${time}". Use "Closed", "9:00 AM - 5:00 PM", "9:00-17:00", or "24/7"`);
+          }
+        }
+        
+        return true;
+      }
+      
+      throw new Error('Hours must be an object or array with valid day-time pairs');
     })
-    .withMessage('Hours must be an object, array, or string'),
+    .withMessage('Hours must be a valid object or array with proper time formats'),
   
   body('avatar')
     .optional()

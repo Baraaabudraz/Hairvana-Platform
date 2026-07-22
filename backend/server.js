@@ -14,10 +14,14 @@ if (typeof PhusionPassenger !== "undefined") {
 // Initialize Express app
 const app = express();
 
+// Trust proxy so express-rate-limit can correctly use X-Forwarded-For behind proxies
+// If you're behind one proxy (e.g., Passenger/Nginx), set to 1; adjust as needed
+app.set('trust proxy', 1);
+
 // Register Stripe webhook route FIRST
 app.use(
   "/backend/api/mobile/payments",
-  require("./routes/Api/v0/customer/stripeWebhook")
+  require("./routes/Api/v1/customer/stripeWebhook")
 );
 
 // Middleware
@@ -44,6 +48,7 @@ app.use("/backend/api/auth", require("./routes/auth"));
 app.use("/backend/api/users", require("./routes/users"));
 app.use("/backend/api/salons", require("./routes/salons"));
 app.use("/backend/api/subscriptions", require("./routes/subscriptions"));
+app.use("/backend/api/subscription-payments", require("./routes/subscriptionPayments"));
 app.use("/backend/api/services", require("./routes/services"));
 app.use("/backend/api/staff", require("./routes/staff"));
 app.use("/backend/api/appointments", require("./routes/appointments"));
@@ -56,44 +61,45 @@ app.use("/backend/api/report-templates", require("./routes/reportTemplates"));
 app.use("/backend/api/reports", require("./routes/reports"));
 app.use("/backend/api/payments", require("./routes/payments"));
 app.use("/backend/api/roles", require("./routes/roles"));
+app.use("/backend/api/support", require("./routes/support"));
 
 // AR Filter Routes
 
 
 // Mobile API Routes for Customer
 app.use(
-  "/backend/api/v0/customer/auth",
-  require("./routes/Api/v0/customer/auth")
+  "/backend/api/v1/customer/auth",
+  require("./routes/Api/v1/customer/auth")
 );
 app.use(
-  "/backend/api/v0/customer/user",
-  require("./routes/Api/v0/customer/user")
+  "/backend/api/v1/customer/user",
+  require("./routes/Api/v1/customer/user")
 );
 app.use(
-  "/backend/api/v0/customer/salons",
-  require("./routes/Api/v0/customer/salon")
+  "/backend/api/v1/customer/salons",
+  require("./routes/Api/v1/customer/salon")
 );
 app.use(
-  "/backend/api/v0/customer/hairstyles",
-  require("./routes/Api/v0/customer/hairstyle")
+  "/backend/api/v1/customer/hairstyles",
+  require("./routes/Api/v1/customer/hairstyle")
 );
-app.use("/backend/api/v0/customer/", require("./routes/Api/v0/customer/appointment"));
+app.use("/backend/api/v1/customer/", require("./routes/Api/v1/customer/appointment"));
 app.use(
-  "/backend/api/v0/customer/payments",
-  require("./routes/Api/v0/customer/payment")
-);
-app.use(
-  "/backend/api/v0/customer/notifications",
-  require("./routes/Api/v0/customer/notifications")
-);
-app.use("/backend/api/v0/customer/staff", require("./routes/Api/v0/customer/staff"));
-app.use(
-  "/backend/api/v0/customer/reviews",
-  require("./routes/Api/v0/customer/reviews")
+  "/backend/api/v1/customer/payments",
+  require("./routes/Api/v1/customer/payment")
 );
 app.use(
-  "/backend/api/v0/customer/devices",
-  require("./routes/Api/v0/customer/devices")
+  "/backend/api/v1/customer/notifications",
+  require("./routes/Api/v1/customer/notifications")
+);
+app.use("/backend/api/v1/customer/staff", require("./routes/Api/v1/customer/staff"));
+app.use(
+  "/backend/api/v1/customer/reviews",
+  require("./routes/Api/v1/customer/reviews")
+);
+app.use(
+  "/backend/api/v1/customer/devices",
+  require("./routes/Api/v1/customer/devices")
 );
 app.use("/backend/images", require("./routes/images"));
 app.use('/backend/api/v0/customer/hairstyle-tryon', require('./routes/Api/v0/customer/hairstyleTryOn'));
@@ -101,42 +107,54 @@ app.use('/backend/api/v0/customer/hairstyle-tryon', require('./routes/Api/v0/cus
 
 // Mobile API Routes for Salon Owner
 app.use(
-  "/backend/api/v0/salon/owner-auth",
-  require("./routes/Api/v0/salon/ownerAuth")
+  "/backend/api/v1/salon/owner-auth",
+  require("./routes/Api/v1/salon/ownerAuth")
 );
 app.use(
-  "/backend/api/v0/salon/owner-profile",
-  require("./routes/Api/v0/salon/ownerProfile")
+  "/backend/api/v1/salon/owner-profile",
+  require("./routes/Api/v1/salon/ownerProfile")
 );
 app.use(
-  "/backend/api/v0/salon/salon-profile",
-  require("./routes/Api/v0/salon/salonProfile")
+  "/backend/api/v1/salon/salon-profile",
+  require("./routes/Api/v1/salon/salonProfile")
 );
 // Mount specific routes first (before the general salon routes with /:id parameter)
 app.use(
-  "/backend/api/v0/salon/hairstyle",
-  require("./routes/Api/v0/salon/hairstyle")
+  "/backend/api/v1/salon/hairstyle",
+  require("./routes/Api/v1/salon/hairstyle")
 );
 app.use(
-  "/backend/api/v0/salon/services",
-  require("./routes/Api/v0/salon/services")
+  "/backend/api/v1/salon/services",
+  require("./routes/Api/v1/salon/services")
 );
 app.use(
-  "/backend/api/v0/salon/appointments",
-  require("./routes/Api/v0/salon/appointments")
+  "/backend/api/v1/salon/appointments",
+  require("./routes/Api/v1/salon/appointments")
 );
 app.use(
-  "/backend/api/v0/salon/staff",
-  require("./routes/Api/v0/salon/staff")
+  "/backend/api/v1/salon/staff",
+  require("./routes/Api/v1/salon/staff")
 );
 app.use(
-  "/backend/api/v0/salon/address",
-  require("./routes/Api/v0/salon/address")
+  "/backend/api/v1/salon/address",
+  require("./routes/Api/v1/salon/address")
+);
+app.use(
+  "/backend/api/v1/salon/subscription",
+  require("./routes/Api/v1/salon/subscription")
+);
+app.use(
+  "/backend/api/v1/salon/support",
+  require("./routes/Api/v1/salon/support")
+);
+app.use(
+  "/backend/api/v1/salon/devices",
+  require("./routes/Api/v1/salon/devices")
 );
 // Mount general salon routes last (has /:id parameter that could conflict)
 app.use(
-  "/backend/api/v0/salon",
-  require("./routes/Api/v0/salon/salon")
+  "/backend/api/v1/salon",
+  require("./routes/Api/v1/salon/salon")
 );
 
 // Serve uploaded images statically

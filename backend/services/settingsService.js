@@ -19,14 +19,46 @@ exports.updateProfileSettings = async (userId, profileData) => {
   }
 };
 
+exports.getSecuritySettings = async (userId) => {
+  if (!userId) throw new Error('User ID is required');
+  
+  try {
+    return await settingsRepository.getSecuritySettings(userId);
+  } catch (err) {
+    throw new Error('Failed to get security settings: ' + err.message);
+  }
+};
+
 exports.updateSecuritySettings = async (userId, data) => {
   if (!userId) throw new Error('User ID is required');
-  throw new Error('Not implemented: updateSecuritySettings');
+  if (!data || typeof data !== 'object') throw new Error('Security settings data is required');
+  
+  try {
+    return await settingsRepository.updateSecuritySettings(userId, data);
+  } catch (err) {
+    throw new Error('Failed to update security settings: ' + err.message);
+  }
+};
+
+exports.getNotificationPreferences = async (userId) => {
+  if (!userId) throw new Error('User ID is required');
+  
+  try {
+    return await settingsRepository.getNotificationPreferences(userId);
+  } catch (err) {
+    throw new Error('Failed to get notification preferences: ' + err.message);
+  }
 };
 
 exports.updateNotificationPreferences = async (userId, data) => {
   if (!userId) throw new Error('User ID is required');
-  throw new Error('Not implemented: updateNotificationPreferences');
+  if (!data || typeof data !== 'object') throw new Error('Notification preferences data is required');
+  
+  try {
+    return await settingsRepository.updateNotificationPreferences(userId, data);
+  } catch (err) {
+    throw new Error('Failed to update notification preferences: ' + err.message);
+  }
 };
 
 exports.updateBillingSettings = async (userId, data) => {
@@ -63,7 +95,12 @@ exports.getPlatformSettings = async () => {
 
 exports.updatePlatformSettings = async (data) => {
   if (!data || typeof data !== 'object') throw new Error('Platform settings data is required');
-  throw new Error('Not implemented: updatePlatformSettings');
+  
+  try {
+    return await settingsRepository.updatePlatformSettings(data);
+  } catch (err) {
+    throw new Error('Failed to update platform settings: ' + err.message);
+  }
 };
 
 exports.getIntegrationSettings = async () => {

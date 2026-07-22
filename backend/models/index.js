@@ -49,6 +49,9 @@ const OwnerDocument = require('./owner_document');
 const TokenBlacklist = require('./token_blacklist');
 const Role = require('./role');
 const Permission = require('./permission');
+const SubscriptionPayment = require('./subscription_payment');
+const SupportTicket = require('./support_ticket');
+const SupportMessage = require('./support_message');
 
 // Initialize models in dependency order
 const models = {
@@ -83,7 +86,10 @@ const models = {
   Review: Review(sequelize, Sequelize.DataTypes),
   MobileDevice: MobileDevice(sequelize, Sequelize.DataTypes),
   OwnerDocument: OwnerDocument(sequelize, Sequelize.DataTypes),
-  TokenBlacklist: TokenBlacklist(sequelize, Sequelize.DataTypes)
+  TokenBlacklist: TokenBlacklist(sequelize, Sequelize.DataTypes),
+  SubscriptionPayment: SubscriptionPayment(sequelize, Sequelize.DataTypes),
+  SupportTicket: SupportTicket(sequelize, Sequelize.DataTypes),
+  SupportMessage: SupportMessage(sequelize, Sequelize.DataTypes)
 };
 
 // Initialize associations
@@ -117,6 +123,7 @@ async function syncOrdered(options = {}) {
       "report_templates",
       "services",
       "staff",
+      "subscription_payments",
       "subscriptions",
       "appointments",
       "payments",
